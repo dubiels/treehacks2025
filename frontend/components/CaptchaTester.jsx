@@ -17,26 +17,52 @@ const CaptchaTester = () => {
   };
 
   const handleSubmit = async () => {
+    if (!image || !correctAnswer) return;
+  
     setIsLoading(true);
-    
-    // Simulated API call - replace with actual API integration
-    setTimeout(() => {
-      setResults([
-        { agent: 'OpenAI', response: 'treehacks', time: '2.5 s', correct: true },
-        { agent: 'Claude', response: 'treehacks', time: '2.8 s', correct: true },
-        { agent: 'Perplexity', response: 'treehacks', time: '3.8 s', correct: true },
-        { agent: 'Mistral AI', response: 'trees', time: '2.5 s', correct: false },
-        { agent: 'Anthropic', response: 'hacks', time: '2.8 s', correct: false },
-        { agent: 'OpenAI', response: 'snackbar', time: '2.8 s', correct: false },
-      ]);
+    setResults(null);
+  
+    const formData = new FormData();
+    formData.append("image", dataURLtoBlob(image));
+    formData.append("correct_answer", correctAnswer);
+  
+    try {
+      const response = await fetch("http://127.0.0.1:5000/solve", {
+        method: "POST",
+        body: formData,
+      });
+  
+      const data = await response.json();
+  
+      if (data.error) {
+        console.error("Error:", data.error);
+      } else {
+        setResults(data.results);
+      }
+    } catch (error) {
+      console.error("Submission error:", error);
+    } finally {
       setIsLoading(false);
-    }, 1500);
+    }
   };
+  
+  // Convert base64 image data to Blob
+  const dataURLtoBlob = (dataURL) => {
+    const byteString = atob(dataURL.split(",")[1]);
+    const mimeString = dataURL.split(",")[0].split(":")[1].split(";")[0];
+    const ab = new ArrayBuffer(byteString.length);
+    const ia = new Uint8Array(ab);
+    for (let i = 0; i < byteString.length; i++) {
+      ia[i] = byteString.charCodeAt(i);
+    }
+    return new Blob([ab], { type: mimeString });
+  };
+  
 
   return (
     <div className="min-h-screen bg-gray-900 text-white p-8">
       <div className="max-w-6xl mx-auto">
-        <h1 className="text-4xl font-bold text-center mb-2">
+        <h1 className="text-4xl font-bold text-center mb-2 mt-12">
           Are your CAPTCHAs AI-resistant?
         </h1>
         <p className="text-gray-400 text-center mb-12">

@@ -80,19 +80,23 @@ def solve_with_mistral(base64_image):
 
 
 # 🔹 Main Function to Solve CAPTCHA (Choose AI Model)
-def solve_captcha(image_url, model="gemini"):
+def solve_captcha(image_data, model="gemini"):
     try:
-        start_time = time.time()  # Start timing
+        start_time = time.time()
 
-        # Download CAPTCHA
-        captcha_image = download_captcha(image_url)
-
-        # Convert to appropriate format
-        if model == "gemini":
-            image_data = encode_image(captcha_image)
-            result = solve_with_gemini(image_data)
-        elif model == "mistral":
+        # Check if input is already Base64
+        if image_data.startswith("http"):
+            # If a URL is given, download and convert to Base64
+            captcha_image = download_captcha(image_data)
             base64_image = encode_image(captcha_image)
+        else:
+            # If already Base64, use it directly
+            base64_image = image_data
+
+        # Solve based on the model
+        if model == "gemini":
+            result = solve_with_gemini(base64_image)
+        elif model == "mistral":
             result = solve_with_mistral(base64_image)
         else:
             raise ValueError("Invalid model. Choose 'gemini' or 'mistral'.")
@@ -103,6 +107,7 @@ def solve_captcha(image_url, model="gemini"):
     
     except Exception as e:
         return f"Error: {str(e)}", None
+
 
 # 🔹 Example Usage (Run with Gemini or Mistral)
 captcha_url = "https://cf-assets.www.cloudflare.com/slt3lc6tev37/3pwMuJ55jpErAafgrWbyTr/e6c487ac6e4288dfe284db72b88ea3d1/captcha.png"
