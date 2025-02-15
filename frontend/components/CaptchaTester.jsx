@@ -65,19 +65,20 @@ const CaptchaTester = () => {
 
     const handleObfuscate = async () => {
         if (!imageUrl || errorMessage) return;
-
+    
         setIsObfuscating(true);
-
+    
         try {
             const response = await fetch("http://127.0.0.1:5000/obfuscate", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ image_url: imageUrl }),
             });
-
+    
             const data = await response.json();
             if (data.image_url) {
                 setObfuscatedImage(data.image_url);
+                setImageUrl(data.image_url); // Allow retesting with new CAPTCHA
             } else {
                 console.error("Obfuscation failed:", data.error);
                 setErrorMessage(`Server Error: ${data.error}`);
@@ -89,6 +90,7 @@ const CaptchaTester = () => {
             setIsObfuscating(false);
         }
     };
+    
 
     return (
         <div className="min-h-screen bg-gray-900 text-white p-8">
@@ -204,13 +206,6 @@ const CaptchaTester = () => {
                                 </div>
                             ))}
                         </div>
-                        {obfuscatedImage && (
-                            <img
-                                src={obfuscatedImage}
-                                alt="Obfuscated CAPTCHA"
-                                className="mt-4 max-w-full h-auto"
-                            />
-                        )}
                     </div>
                 </div>
             </div>
