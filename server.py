@@ -14,7 +14,7 @@ app = Flask(__name__, static_folder="dist", static_url_path="/")
 CORS(app, resources={r"/*": {"origins": "*"}})
 
 @app.route("/", defaults={'path': ''})
-@app.route("/<path:path>")
+@app.route("/")
 def serve(path):
     if path != "" and os.path.exists(app.static_folder + '/' + path):
         return send_from_directory(app.static_folder, path)
@@ -55,12 +55,11 @@ def obfuscate():
         return jsonify({
             "image_url": f"https://treehacks2025-one.vercel.app/temp/{unique_filename}"
         })
-
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 # Serve obfuscated CAPTCHAs dynamically
-@app.route("/temp/<filename>")
+@app.route("/temp/")
 def serve_obfuscated(filename):
     """Serve temporary CAPTCHA images."""
     return send_from_directory("public/temp", filename)
@@ -95,7 +94,7 @@ def solve():
         gemini_models = ["gemini-1.5-flash", "gemini-1.5-pro"]
         mistral_models = ["pixtral-12b-2409"]
         groq_models = ["llama-3.2-90b-vision-preview", "llama-3.2-11b-vision-preview"]
-        
+
         results = [
             {"agent": "OpenAI GPT-4o", "response": openai_text.strip().lower(), "time": f"{openai_time}s", "correct": openai_text.strip().lower() == correct_answer}
         ]
@@ -120,8 +119,8 @@ def solve():
             "correct_response": correct_answer,
             "results": results
         }
-        return jsonify(response)
 
+        return jsonify(response)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -131,12 +130,11 @@ def apply_obfuscation(img_np):
     for i in range(height):
         offset = int(5 * np.sin(2.0 * np.pi * i / 50))
         img_np[i] = np.roll(img_np[i], offset, axis=0)
-
     noise = np.random.normal(0, 15, img_np.shape).astype("uint8")
     img_np = cv2.add(img_np, noise)
     img_np = cv2.GaussianBlur(img_np, (3, 3), 0)
-
     return img_np
 
 if __name__ == "__main__":
     app.run(debug=True)
+
