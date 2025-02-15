@@ -6,6 +6,8 @@ const CaptchaTester = () => {
   const [correctAnswer, setCorrectAnswer] = useState('');
   const [results, setResults] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [obfuscatedImage, setObfuscatedImage] = useState(null);
+  const [isObfuscating, setIsObfuscating] = useState(false);
 
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
@@ -45,8 +47,34 @@ const CaptchaTester = () => {
       setIsLoading(false);
     }
   };
+
+  const handleObfuscate = async () => {
+    if (!image) return;
+    
+    setIsObfuscating(true);
   
-  // Convert base64 image data to Blob
+    const formData = new FormData();
+    formData.append("image", dataURLtoBlob(image));
+  
+    try {
+      const response = await fetch("http://127.0.0.1:5000/obfuscate", {
+        method: "POST",
+        body: formData,
+      });
+  
+      const data = await response.json();
+      if (data.image_url) {
+        setObfuscatedImage(data.image_url);
+      } else {
+        console.error("Obfuscation failed:", data.error);
+      }
+    } catch (error) {
+      console.error("Error obfuscating:", error);
+    } finally {
+      setIsObfuscating(false);
+    }
+  };
+  
   const dataURLtoBlob = (dataURL) => {
     const byteString = atob(dataURL.split(",")[1]);
     const mimeString = dataURL.split(",")[0].split(":")[1].split(";")[0];
@@ -58,7 +86,6 @@ const CaptchaTester = () => {
     return new Blob([ab], { type: mimeString });
   };
   
-
   return (
     <div className="min-h-screen bg-gray-900 text-white p-8">
       <div className="max-w-6xl mx-auto">
@@ -70,59 +97,33 @@ const CaptchaTester = () => {
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {/* Left Column - Upload Section */}
           <div className="space-y-6">
             <div className="bg-gray-800 rounded-lg p-6">
               <h2 className="text-xl font-semibold mb-4">Upload CAPTCHA:</h2>
               <div className="border-2 border-dashed border-gray-600 rounded-lg p-4 text-center">
-                <input
-                  type="file"
-                  onChange={handleImageUpload}
-                  className="hidden"
-                  id="captcha-upload"
-                  accept="image/*"
-                />
-                <label
-                  htmlFor="captcha-upload"
-                  className="cursor-pointer block"
-                >
+                <input type="file" onChange={handleImageUpload} className="hidden" id="captcha-upload" accept="image/*" />
+                <label htmlFor="captcha-upload" className="cursor-pointer block">
                   <Upload className="mx-auto mb-2" />
-                  <span className="text-gray-400">
-                    Click to upload or drag and drop
-                  </span>
+                  <span className="text-gray-400">Click to upload or drag and drop</span>
                 </label>
               </div>
-              {image && (
-                <img
-                  src={image}
-                  alt="CAPTCHA preview"
-                  className="mt-4 max-w-full h-auto"
-                />
-              )}
+              {image && <img src={image} alt="CAPTCHA preview" className="mt-4 max-w-full h-auto" />}
             </div>
 
             <div className="bg-gray-800 rounded-lg p-6">
               <h2 className="text-xl font-semibold mb-4">Correct Response:</h2>
-              <input
-                type="text"
-                value={correctAnswer}
-                onChange={(e) => setCorrectAnswer(e.target.value)}
-                className="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2"
-                placeholder="Enter the correct CAPTCHA text"
-              />
+              <input type="text" value={correctAnswer} onChange={(e) => setCorrectAnswer(e.target.value)} className="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2" placeholder="Enter the correct CAPTCHA text" />
             </div>
 
-            <button
-              onClick={handleSubmit}
-              disabled={!image || !correctAnswer || isLoading}
-              className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 
-                         disabled:cursor-not-allowed py-3 rounded-lg font-semibold"
-            >
+            <button onClick={handleSubmit} disabled={!image || !correctAnswer || isLoading} className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed py-3 rounded-lg font-semibold">
               {isLoading ? 'Testing...' : 'Test CAPTCHA'}
             </button>
+            
+            <button onClick={handleObfuscate} disabled={!image || isObfuscating} className="w-full bg-orange-600 hover:bg-orange-700 disabled:bg-gray-600 disabled:cursor-not-allowed py-3 rounded-lg font-semibold mt-4">
+              {isObfuscating ? 'Obfuscating...' : 'Obfuscate'}
+            </button>
           </div>
-
-          {/* Right Column - Results Section */}
+          
           <div className="bg-gray-800 rounded-lg p-6">
             <div className="grid grid-cols-3 gap-4 mb-4">
               <h3 className="font-semibold">Agent</h3>
@@ -133,11 +134,7 @@ const CaptchaTester = () => {
               {results?.map((result, index) => (
                 <div key={index} className="grid grid-cols-3 gap-4 items-center">
                   <div className="flex items-center gap-2">
-                    {result.correct ? (
-                      <Check className="text-green-500" size={20} />
-                    ) : (
-                      <X className="text-red-500" size={20} />
-                    )}
+                    {result.correct ? <Check className="text-green-500" size={20} /> : <X className="text-red-500" size={20} />}
                     {result.agent}
                   </div>
                   <div>{result.response}</div>
@@ -147,12 +144,8 @@ const CaptchaTester = () => {
                   </div>
                 </div>
               ))}
-              {!results && (
-                <p className="text-gray-400 text-center py-8">
-                  Test results will appear here
-                </p>
-              )}
             </div>
+            {obfuscatedImage && <img src={obfuscatedImage} alt="Obfuscated CAPTCHA" className="mt-4 max-w-full h-auto" />}
           </div>
         </div>
       </div>
