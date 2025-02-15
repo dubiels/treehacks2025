@@ -271,6 +271,36 @@ def check_multiselect_correctness(correct_response, ai_response):
         # Handle errors (e.g., invalid AI response)
         return False
     
+def check_text_correctness(correct_response, ai_response):
+    """
+    Checks if the AI model's text CAPTCHA response matches the correct response,
+    allowing flexible spacing but preserving character order.
+
+    Args:
+        correct_response (str): The correct text-based CAPTCHA answer.
+        ai_response (str): The AI model's response.
+
+    Returns:
+        bool: True if the AI response contains all correct characters in order, False otherwise.
+    """
+    try:
+        # Remove all whitespace from correct response
+        correct_cleaned = "".join(correct_response.split())  # Remove spaces/tabs/newlines
+        ai_cleaned = "".join(ai_response.split())  # Remove spaces/tabs/newlines
+
+        # Check if the AI response preserves character order
+        correct_index = 0
+        for char in ai_cleaned:
+            if correct_index < len(correct_cleaned) and char == correct_cleaned[correct_index]:
+                correct_index += 1
+        
+        # If all characters in correct_cleaned are found in order, it's correct
+        return correct_index == len(correct_cleaned)
+
+    except Exception:
+        # Handle unexpected errors (e.g., empty responses, None values)
+        return False
+    
 # 🔹 Example Usage
 captcha_url = "https://cf-assets.www.cloudflare.com/slt3lc6tev37/4wCmCWsWiTB8ZG64tBVEKY/0499192ff9baf249fa2b45843c5d2948/recaptcha.png"
 multiselect_url = "https://miro.medium.com/v2/resize:fit:1092/1*jcXPqzruCRYHItBKcVolrw.jpeg"

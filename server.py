@@ -7,7 +7,7 @@ import os
 import numpy as np
 import cv2
 from PIL import Image
-from agents.agent import solve_captcha
+from agents.agent import solve_captcha, check_text_correctness, check_multiselect_correctness
 import uuid
 
 app = Flask(__name__, static_folder="dist", static_url_path="/")
@@ -96,23 +96,23 @@ def solve():
         groq_models = ["llama-3.2-90b-vision-preview", "llama-3.2-11b-vision-preview"]
 
         results = [
-            {"agent": "OpenAI GPT-4o", "response": openai_text.strip().lower(), "time": f"{openai_time}s", "correct": openai_text.strip().lower() == correct_answer}
+            {"agent": "OpenAI GPT-4o", "response": openai_text.strip().lower(), "time": f"{openai_time}s", "correct": check_text_correctness(correct_answer, openai_text.strip().lower())}
         ]
 
         # Process Gemini models
         for gemini_model in gemini_models:
             _, gemini_text, gemini_time = solve_captcha(base64_image, model_name=gemini_model)
-            results.append({"agent": f"Google {gemini_model}", "response": gemini_text.strip().lower(), "time": f"{gemini_time}s", "correct": gemini_text.strip().lower() == correct_answer})
+            results.append({"agent": f"Google {gemini_model}", "response": gemini_text.strip().lower(), "time": f"{gemini_time}s", "correct": check_text_correctness(correct_answer, gemini_text.strip().lower())})
 
         # Process Mistral models
         for mistral_model in mistral_models:
             _, mistral_text, mistral_time = solve_captcha(base64_image, model_name=mistral_model)
-            results.append({"agent": f"Mistral {mistral_model}", "response": mistral_text.strip().lower(), "time": f"{mistral_time}s", "correct": mistral_text.strip().lower() == correct_answer})
+            results.append({"agent": f"Mistral {mistral_model}", "response": mistral_text.strip().lower(), "time": f"{mistral_time}s", "correct": check_text_correctness(correct_answer, mistral_text.strip().lower())})
 
         # Process Groq models
         for groq_model in groq_models:
             _, groq_text, groq_time = solve_captcha(image_url, model_name=groq_model)
-            results.append({"agent": f"Mistral {groq_model}", "response": groq_text.strip().lower(), "time": f"{groq_time}s", "correct": groq_text.strip().lower() == correct_answer})
+            results.append({"agent": f"Mistral {groq_model}", "response": groq_text.strip().lower(), "time": f"{groq_time}s", "correct": check_text_correctness(correct_answer, groq_text.strip().lower())})
 
         response = {
             "display_image": image_url,
