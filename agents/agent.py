@@ -71,6 +71,7 @@ def solve_with_gemini(image_bytes, model_name="gemini-1.5-flash", is_multiselect
             "If no images match, respond with 'None'."
             "Example response that I expect from you: 2, 7, 9"
         )
+        # print("PROMPT", prompt)
 
         response = model.generate_content(
             [
@@ -102,6 +103,7 @@ def solve_with_mistral(base64_image, is_multiselect=False):
             "If no images match, respond with 'None'."
             "Example response that I expect from you: 2, 7, 9"
         )
+        # print("PROMPT", prompt)
         messages = [
             {
                 "role": "user",
@@ -145,6 +147,7 @@ def solve_with_openai(image_url, is_multiselect=False):
             "If no images match, respond with 'None'."
             "Example response that I expect from you: 2, 7, 9"
         )
+        # print("PROMPT", prompt)
 
         response = client.chat.completions.create(
             model="gpt-4o",
@@ -189,6 +192,7 @@ def solve_with_groq(image_url, model_name, is_multiselect=False):
             "Example response that I expect from you: 2, 7, 9"
             "No periods at the end please, only comma separated numbers"
         )
+        # print("PROMPT", prompt)
 
         payload = {
             "model": model_name,
@@ -301,39 +305,42 @@ def check_text_correctness(correct_response, ai_response):
         # Handle unexpected errors (e.g., empty responses, None values)
         return False
     
-# 🔹 Example Usage
-captcha_url = "https://cf-assets.www.cloudflare.com/slt3lc6tev37/4wCmCWsWiTB8ZG64tBVEKY/0499192ff9baf249fa2b45843c5d2948/recaptcha.png"
-multiselect_url = "https://miro.medium.com/v2/resize:fit:1092/1*jcXPqzruCRYHItBKcVolrw.jpeg"
+def test_agents():
+    # 🔹 Example Usage
+    captcha_url = "https://cf-assets.www.cloudflare.com/slt3lc6tev37/4wCmCWsWiTB8ZG64tBVEKY/0499192ff9baf249fa2b45843c5d2948/recaptcha.png"
+    multiselect_url = "https://miro.medium.com/v2/resize:fit:1092/1*jcXPqzruCRYHItBKcVolrw.jpeg"
 
-models_to_test = [
-    "gemini-1.5-flash",  # ✅ Google Gemini Flash
-    "gemini-1.5-pro",  # ✅ Google Gemini Pro
-    "pixtral-12b-2409",  # ✅ Mistral
-    "gpt-4o",  # ✅ OpenAI GPT-4o
-    "llama-3.2-90b-vision-preview",  # ✅ Groq LLaMA 3 (8B)
-    "llama-3.2-11b-vision-preview"  # ✅ Groq LLaMA 3 (70B)
-]
+    models_to_test = [
+        "gemini-1.5-flash",  # ✅ Google Gemini Flash
+        "gemini-1.5-pro",  # ✅ Google Gemini Pro
+        "pixtral-12b-2409",  # ✅ Mistral
+        "gpt-4o",  # ✅ OpenAI GPT-4o
+        "llama-3.2-90b-vision-preview",  # ✅ Groq LLaMA 3 (8B)
+        "llama-3.2-11b-vision-preview"  # ✅ Groq LLaMA 3 (70B)
+    ]
 
-# Run with all models
-results = []
-for model in models_to_test:
-    model_name, captcha_text, time_taken = solve_captcha(captcha_url, model)
-    results.append((model_name, captcha_text, time_taken))
+    # Run with all models
+    results = []
+    for model in models_to_test:
+        model_name, captcha_text, time_taken = solve_captcha(captcha_url, model)
+        results.append((model_name, captcha_text, time_taken))
 
-# Print results in a clean format
-print("\n🔹 CAPTCHA SOLVING RESULTS 🔹\n")
-for model_name, captcha_text, time_taken in results:
-    print(f"✅ {model_name.upper()} Solved: {captcha_text}")
-    print(f"⏱ Time Taken: {time_taken}s\n")
+    # Print results in a clean format
+    print("\n🔹 CAPTCHA SOLVING RESULTS 🔹\n")
+    for model_name, captcha_text, time_taken in results:
+        print(f"✅ {model_name.upper()} Solved: {captcha_text}")
+        print(f"⏱ Time Taken: {time_taken}s\n")
 
-# Run with all models
-results = []
-for model in models_to_test:
-    model_name, captcha_text, time_taken = solve_captcha(multiselect_url, model, is_multiselect=True)
-    results.append((model_name, captcha_text, time_taken))
+    # Run with all models
+    results = []
+    for model in models_to_test:
+        model_name, captcha_text, time_taken = solve_captcha(multiselect_url, model, is_multiselect=True)
+        results.append((model_name, captcha_text, time_taken))
 
-# Print results in a clean format
-print("\n🔹 MULTISELECT CAPTCHA SOLVING RESULTS 🔹\n")
-for model_name, captcha_text, time_taken in results:
-    print(f"✅ {model_name.upper()} Solved: {captcha_text}")
-    print(f"⏱ Time Taken: {time_taken}s\n")
+    # Print results in a clean format
+    print("\n🔹 MULTISELECT CAPTCHA SOLVING RESULTS 🔹\n")
+    for model_name, captcha_text, time_taken in results:
+        print(f"✅ {model_name.upper()} Solved: {captcha_text}")
+        print(f"⏱ Time Taken: {time_taken}s\n")
+
+# test_agents()
