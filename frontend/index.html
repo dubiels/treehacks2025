@@ -6,42 +6,8 @@
     <title>CAPTCHA AI Test</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-900 text-white flex flex-col items-center justify-center min-h-screen">
-
-    <h1 class="text-3xl font-bold mb-2">Are your CAPTCHAs AI-resistant?</h1>
-    <p class="text-gray-400 mb-6">Instantly test against multiple industry-standard models 👇</p>
-
-    <div class="bg-gray-800 p-6 rounded-lg shadow-lg">
-        <label class="block text-lg font-semibold mb-2">Upload CAPTCHA:</label>
-        <input type="file" id="captchaInput" accept="image/*" class="mb-4 text-black bg-gray-200 p-2 rounded">
-
-        <label class="block text-lg font-semibold mb-2">Enter Correct Answer:</label>
-        <input type="text" id="correctAnswer" class="mb-4 text-black bg-gray-200 p-2 rounded w-full" placeholder="Type the correct CAPTCHA text">
-
-        <img id="captchaPreview" class="w-48 mt-2 border border-gray-500 hidden" />
-
-        <button onclick="solveCaptcha()" class="mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded">
-            Solve CAPTCHA
-        </button>
-
-        <p class="mt-4 text-gray-300">Correct Response:</p>
-        <div id="correctResponse" class="bg-gray-700 text-white px-4 py-2 rounded inline-block">—</div>
-    </div>
-
-    <div class="mt-6 w-full max-w-lg">
-        <table class="w-full text-left border-separate border-spacing-y-2">
-            <thead>
-                <tr>
-                    <th class="text-gray-400">Agent</th>
-                    <th class="text-gray-400">Response</th>
-                    <th class="text-gray-400">Time</th>
-                </tr>
-            </thead>
-            <tbody id="resultsTable"></tbody>
-        </table>
-    </div>
-
-    <script src="main.js"></script>
-
+<body>
+    <div id="root"></div>
+    <script type="module" src="/main.jsx"></script>
 </body>
 </html>

@@ -1,44 +1,81 @@
+# CAPTCHA AI Resistance Tester
 
+Test your CAPTCHAs against multiple industry-standard AI models to assess their resistance to automated solving.
 
-## 🚀 Setup Instructions
+## Setup Instructions
 
-Follow these steps to set up your environment and run the script.
+### Prerequisites
+- Node.js and npm
+- Git (optional)
 
----
+### Installation
 
-## 🛠️ Setup & Installation
-
-### 1️⃣ Install Dependencies
-
-Ensure you have Python 3.8+ installed. Then, in your project root, run:
-
-``` pip install -r requirements.txt ```
-
-
-### 2️⃣ Configure API Keys
-
-Create a `.env` file in the project root with the following:
-```
-GOOGLE_API_KEY=your_google_gemini_api_key
-MISTRAL_API_KEY=your_mistral_api_key
+1. **Clone the repository** (or download and extract the ZIP):
+```bash
+git clone [your-repo-url]
+cd [project-directory]
 ```
 
+2. **Set up the React frontend**:
+```bash
+# Install Node dependencies
+npm init -y
+npm install react react-dom lucide-react
+npm install --save-dev vite @vitejs/plugin-react
+```
 
-Replace `your_google_gemini_api_key` and `your_mistral_api_key` with your actual API keys.
+3. **Create the project structure**:
+```
+project_root/
+├── package.json
+├── vite.config.js
+└── frontend/
+    ├── index.html
+    ├── components/
+    │   └── CaptchaTester.jsx
+    └── main.jsx
+```
 
-## 🚀 Running the Project
+4. **Configure Vite**:
+Create `vite.config.js` in the project root:
+```javascript
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
 
-### 1️⃣ Start the Backend
+export default defineConfig({
+  plugins: [react()],
+  root: 'frontend',
+  build: {
+    outDir: '../dist'
+  },
+  resolve: {
+    extensions: ['.js', '.jsx']
+  }
+})
+```
 
-Run the Flask server:
+5. **Update package.json**:
+Make sure your package.json includes these scripts:
+```json
+{
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  }
+}
+```
 
-``` python server.py ```
+### Running the Application
 
+#### Development Mode
+```bash
+npm run dev
+```
+This will run on http://localhost:5173
 
-This starts the backend at `http://127.0.0.1:5000/`.
-
-### 2️⃣ Open the Frontend
-
-Open your browser and visit `http://127.0.0.1:5000/` to access the application.
-
-
+#### Production Mode
+```bash
+npm run build
+npm run preview
+```
