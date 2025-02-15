@@ -1,6 +1,4 @@
-# 🛠 Quantum CAPTCHA Solver
 
-This project uses **Google Gemini AI** to solve CAPTCHA images by extracting text from them.
 
 ## 🚀 Setup Instructions
 
