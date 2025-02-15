@@ -31,6 +31,8 @@ const CaptchaTester = () => {
     );
   }, []);
 
+
+
   const isValidImageUrl = (url) => /\.(jpg|jpeg|png)$/i.test(url);
 
   const handleImageUrlChange = (e) => {
@@ -99,7 +101,7 @@ const CaptchaTester = () => {
       });
 
       const data = await response.json();
-      if (data.image_url) {
+      if (data.image_url && data.obfuscated_url) {
         setObfuscatedImage(data.image_url);
         setImageUrl(data.image_url);
       } else {

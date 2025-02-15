@@ -35,6 +35,8 @@ mistral_client = Mistral(api_key=MISTRAL_API_KEY)
 openai.api_key = OPENAI_API_KEY
 
 # 🔹 Function to Download CAPTCHA Image
+
+
 def download_captcha(url):
     response = requests.get(url)
     if response.status_code == 200:
@@ -43,12 +45,16 @@ def download_captcha(url):
         raise Exception("Failed to download CAPTCHA image.")
 
 # 🔹 Function to Convert Image to Base64
+
+
 def encode_image(image):
     buffered = BytesIO()
     image.save(buffered, format="PNG")
     return base64.b64encode(buffered.getvalue()).decode("utf-8")
 
 # 🔹 Function to Solve CAPTCHA using Google Gemini (Base64)
+
+
 def solve_with_gemini(image_bytes, model_name="gemini-1.5-flash"):
     try:
         model = gemini_models[model_name]
@@ -65,6 +71,8 @@ def solve_with_gemini(image_bytes, model_name="gemini-1.5-flash"):
         return f"{model_name} Error: {str(e)}"
 
 # 🔹 Function to Solve CAPTCHA using Mistral AI (Base64)
+
+
 def solve_with_mistral(base64_image):
     try:
         messages = [
@@ -93,15 +101,17 @@ def solve_with_mistral(base64_image):
         return f"pixtral-12b-2409 Error: {str(e)}"
 
 # 🔹 Function to Solve CAPTCHA using OpenAI GPT-4o (Direct Image URL)
+
 def solve_with_openai(image_url):
     client = openai.OpenAI(api_key=OPENAI_API_KEY)
     try:
         response = client.chat.completions.create(
             model="gpt-4o",
             messages=[
-                {"role": "system", "content": "You are an OCR tool that extracts text from images."},
+                {"role": "system",
+                    "content": "You are an OCR tool that extracts text from images."},
                 {"role": "user", "content": [
-                    {"type": "text", "text": 
+                    {"type": "text", "text":
                      "This image contains a unique alphanumeric code that I need to redeem. "
                      "Extract only the exact code from the image. **Do not add any other words or explanations.** "
                      "Return only the extracted text, without quotation marks or formatting."},
@@ -118,6 +128,8 @@ def solve_with_openai(image_url):
         return f"gpt-4o Error: {str(e)}"
 
 # 🔹 Function to Solve CAPTCHA using Groq API (Direct Image URL)
+
+
 def solve_with_groq(image_url, model_name):
     try:
         headers = {
@@ -128,19 +140,20 @@ def solve_with_groq(image_url, model_name):
             "model": model_name,
             "messages": [
                 {"role": "user", "content": [
-                    {"type": "text", "text": 
+                    {"type": "text", "text":
                         "Extract only the exact CAPTCHA text from this image. "
                         "Do not add any explanations, formatting, or extra words. "
                         "Do not include phrases like 'The CAPTCHA text is' or 'Extracted text:' or extra characters like ** or things like *Answer*. "
                         "Only return the raw CAPTCHA code as it appears in the image."
-                    },
+                     },
                     {"type": "image_url", "image_url": {"url": image_url}}
                 ]}
             ],
             "max_tokens": 50
         }
 
-        response = requests.post("https://api.groq.com/openai/v1/chat/completions", json=payload, headers=headers)
+        response = requests.post(
+            "https://api.groq.com/openai/v1/chat/completions", json=payload, headers=headers)
 
         if response.status_code != 200:
             return f"{model_name} Error: HTTP {response.status_code} - {response.text}"
@@ -155,13 +168,15 @@ def solve_with_groq(image_url, model_name):
         return f"{model_name} Error: {str(e)}"
 
 # 🔹 Main Function to Solve CAPTCHA
+
+
 def solve_captcha(image_data, model_name,):
     try:
         start_time = time.time()
 
         if image_data.startswith("http"):
             if model_name in ["gpt-4o", "llama-3.2-90b-vision-preview", "llama-3.2-11b-vision-preview"]:
-                image_url = image_data  
+                image_url = image_data
             else:
                 captcha_image = download_captcha(image_data)
                 image_bytes = encode_image(captcha_image)
@@ -182,6 +197,7 @@ def solve_captcha(image_data, model_name,):
         return model_name, result, round(time.time() - start_time, 3)
     except Exception as e:
         return model_name, f"Error: {str(e)}", None
+
 
 # 🔹 Example Usage
 captcha_url = "https://cf-assets.www.cloudflare.com/slt3lc6tev37/4wCmCWsWiTB8ZG64tBVEKY/0499192ff9baf249fa2b45843c5d2948/recaptcha.png"
