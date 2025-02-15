@@ -156,19 +156,36 @@ const CaptchaTester = () => {
                     </div>
                 )}
 
-                {/* ✅ Toggle for CAPTCHA Type */}
-                <div className="bg-gray-800 rounded-lg p-6 mb-6 flex items-center justify-between">
-                    <h2 className="text-xl font-semibold">CAPTCHA Type:</h2>
-                    <label className="flex items-center gap-2">
-                        <span>Text CAPTCHA</span>
-                        <input
-                            type="checkbox"
-                            checked={isMultiselect}
-                            onChange={() => setIsMultiselect(!isMultiselect)}
-                            className="cursor-pointer"
+                {/* ✅ Improved Toggle for CAPTCHA Type */}
+                <div className="flex items-center justify-center mb-6">
+                    <span
+                        className={`text-sm font-medium ${
+                            !isMultiselect ? "text-white" : "text-gray-400"
+                        }`}
+                    >
+                        Text CAPTCHA
+                    </span>
+                    <div
+                        className={`relative flex items-center w-14 h-7 mx-3 bg-gray-600 rounded-full cursor-pointer transition-all ${
+                            isMultiselect ? "bg-green-500" : "bg-gray-500"
+                        }`}
+                        onClick={() => setIsMultiselect(!isMultiselect)}
+                    >
+                        <div
+                            className={`absolute w-6 h-6 bg-white rounded-full shadow-md transform transition-all ${
+                                isMultiselect
+                                    ? "translate-x-7"
+                                    : "translate-x-1"
+                            }`}
                         />
-                        <span>Image Multi-Select CAPTCHA</span>
-                    </label>
+                    </div>
+                    <span
+                        className={`text-sm font-medium ${
+                            isMultiselect ? "text-white" : "text-gray-400"
+                        }`}
+                    >
+                        Image Multi-Select CAPTCHA
+                    </span>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
