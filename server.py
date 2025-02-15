@@ -9,9 +9,42 @@ import cv2
 from PIL import Image
 from agents.agent import solve_captcha, check_text_correctness, check_multiselect_correctness
 import uuid
+import sqlite3
 
+# Flask app setup
 app = Flask(__name__, static_folder="dist", static_url_path="/")
 CORS(app, resources={r"/*": {"origins": "*"}})
+
+# Imgur API credentials (replace with your actual client ID)
+IMGUR_CLIENT_ID = "your_client_id"
+DATABASE = "captcha.db"  # SQLite database file
+
+# ------------------ DATABASE SETUP ------------------
+def initialize_db():
+    """Creates the database and table for storing Imgur URLs."""
+    conn = sqlite3.connect(DATABASE)
+    cursor = conn.cursor()
+    
+    # Create table if it doesn't exist
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS images (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            url TEXT NOT NULL
+        )
+    """)
+    
+    conn.commit()
+    conn.close()
+
+initialize_db()  # Initialize DB when server starts
+
+def save_image_url_to_db(image_url):
+    """Stores the uploaded Imgur URL in SQLite."""
+    conn = sqlite3.connect(DATABASE)
+    cursor = conn.cursor()
+    cursor.execute("INSERT INTO images (url) VALUES (?)", (image_url,))
+    conn.commit()
+    conn.close()
 
 @app.route("/", defaults={'path': ''})
 @app.route("/")
@@ -20,9 +53,26 @@ def serve(path):
         return send_from_directory(app.static_folder, path)
     return send_from_directory(app.static_folder, 'index.html')
 
+# ------------------ IMAGE OBFUSCATION & UPLOAD ------------------
+def upload_to_imgur(image_path):
+    """Uploads an image to Imgur and returns the public URL."""
+    headers = {"Authorization": f"Client-ID {IMGUR_CLIENT_ID}"}
+    with open(image_path, "rb") as file:
+        response = requests.post(
+            "https://api.imgur.com/3/upload",
+            headers=headers,
+            files={"image": file},
+        )
+
+    data = response.json()
+    if data.get("success"):
+        return data["data"]["link"]  # Public Imgur link
+    else:
+        raise Exception(f"Imgur upload failed: {data}")
+
 @app.route("/obfuscate", methods=["POST"])
 def obfuscate():
-    """Apply obfuscation techniques and return a temporary CAPTCHA link."""
+    """Apply obfuscation, upload to Imgur, and return the public link."""
     try:
         data = request.get_json()
         if "image_url" not in data:
@@ -31,7 +81,7 @@ def obfuscate():
         image_url = data["image_url"]
         response = requests.get(image_url)
         if response.status_code != 200:
-            return jsonify({"error": "Failed to fetch image from URL"}), 400
+            return jsonify({"error": "Failed to fetch image"}), 400
 
         image = Image.open(io.BytesIO(response.content)).convert("RGB")
         img_np = np.array(image)
@@ -40,38 +90,52 @@ def obfuscate():
         obfuscated_img = apply_obfuscation(img_np)
         obfuscated_pil = Image.fromarray(obfuscated_img)
 
-        # Generate a unique filename
-        unique_filename = f"{uuid.uuid4().hex}.png"
+        # Save temporarily (on Windows-friendly path)
+        filename = f"{uuid.uuid4().hex}.png"
+        temp_dir = "public/temp"  # Change /tmp/ to public/temp/
+        
+        # Ensure temp directory exists
+        if not os.path.exists(temp_dir):
+            os.makedirs(temp_dir)
 
-        # Ensure the static directory exists
-        static_dir = "public/temp"
-        if not os.path.exists(static_dir):
-            os.makedirs(static_dir)
+        temp_path = os.path.join(temp_dir, filename)
+        obfuscated_pil.save(temp_path)
 
-        # Save the obfuscated image
-        obfuscated_path = os.path.join(static_dir, unique_filename)
-        obfuscated_pil.save(obfuscated_path)
+        # Upload to Imgur
+        imgur_url = upload_to_imgur(temp_path)
 
-        return jsonify({
-            "image_url": f"https://treehacks2025-one.vercel.app/temp/{unique_filename}"
-        })
+        # Save Imgur URL to SQLite
+        save_image_url_to_db(imgur_url)
+
+        return jsonify({"image_url": imgur_url})
+
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-# Serve obfuscated CAPTCHAs dynamically
-@app.route("/temp/")
-def serve_obfuscated(filename):
-    """Serve temporary CAPTCHA images."""
-    return send_from_directory("public/temp", filename)
+# ------------------ RETRIEVE STORED IMAGE LINKS ------------------
+@app.route("/get_images", methods=["GET"])
+def get_images():
+    """Retrieve stored Imgur image links from SQLite."""
+    try:
+        conn = sqlite3.connect(DATABASE)
+        cursor = conn.cursor()
+        cursor.execute("SELECT url FROM images ORDER BY id DESC LIMIT 10")  # Get last 10 images
+        images = cursor.fetchall()
+        conn.close()
 
+        return jsonify({"images": [img[0] for img in images]})
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+# ------------------ CAPTCHA SOLVER ------------------
 @app.route("/solve", methods=["POST"])
 def solve():
     """Handle CAPTCHA solving via an image URL."""
     try:
         data = request.get_json()
-        is_multiselect = data.get("is_multiselect", False)  # ✅ Get CAPTCHA type from request
+        is_multiselect = data.get("is_multiselect", False)
 
-        # Use the correct validation function
         validation_function = check_multiselect_correctness if is_multiselect else check_text_correctness
 
         if "image_url" not in data or "correct_answer" not in data:
@@ -129,6 +193,7 @@ def solve():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+# ------------------ IMAGE OBFUSCATION FUNCTION ------------------
 def apply_obfuscation(img_np):
     """Apply AI-avoidant obfuscation techniques."""
     height, width, _ = img_np.shape
@@ -142,4 +207,3 @@ def apply_obfuscation(img_np):
 
 if __name__ == "__main__":
     app.run(debug=True)
-
