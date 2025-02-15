@@ -1,8 +1,9 @@
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
-import os
+import requests
 import io
 import base64
+import os
 import numpy as np
 import cv2
 from PIL import Image
@@ -20,28 +21,47 @@ def serve(path):
 
 @app.route("/solve", methods=["POST"])
 def solve():
-    """Handle CAPTCHA solving via uploaded image and user-provided correct answer."""
+    """Handle CAPTCHA solving via an image URL."""
     try:
-        if "image" not in request.files or "correct_answer" not in request.form:
-            return jsonify({"error": "Image and correct answer are required"}), 400
+        data = request.get_json()
+        if "image_url" not in data or "correct_answer" not in data:
+            return jsonify({"error": "Image URL and correct answer are required"}), 400
 
-        file = request.files["image"]
-        correct_answer = request.form["correct_answer"].strip().lower()
-        image = Image.open(file.stream)
+        image_url = data["image_url"]
+        correct_answer = data["correct_answer"].strip().lower()
 
+        # Render image on the front end by returning the image URL
+        display_image_url = image_url  
+
+        # Solve CAPTCHA using OpenAI (GPT-4o with direct image URL)
+        openai_text, openai_time = solve_captcha(image_url, model="openai")
+
+        # Fetch image from URL for Gemini & Mistral
+        response = requests.get(image_url)
+        if response.status_code != 200:
+            return jsonify({"error": "Failed to fetch image from URL"}), 400
+
+        image = Image.open(io.BytesIO(response.content))
+
+        # Convert image to Base64 for Gemini & Mistral
         buffered = io.BytesIO()
         image.save(buffered, format="PNG")
         base64_image = base64.b64encode(buffered.getvalue()).decode("utf-8")
 
+        # Solve CAPTCHA using Gemini & Mistral
         gemini_text, gemini_time = solve_captcha(base64_image, model="gemini")
         mistral_text, mistral_time = solve_captcha(base64_image, model="mistral")
 
+        # Normalize responses
         gemini_text = gemini_text.strip().lower()
         mistral_text = mistral_text.strip().lower()
+        openai_text = openai_text.strip().lower()
 
         response = {
+            "display_image": display_image_url,
             "correct_response": correct_answer,
             "results": [
+                {"agent": "OpenAI", "response": openai_text, "time": f"{openai_time}s", "correct": openai_text == correct_answer},
                 {"agent": "Gemini", "response": gemini_text, "time": f"{gemini_time}s", "correct": gemini_text == correct_answer},
                 {"agent": "Mistral", "response": mistral_text, "time": f"{mistral_time}s", "correct": mistral_text == correct_answer}
             ]
@@ -50,46 +70,6 @@ def solve():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
-@app.route("/obfuscate", methods=["POST"])
-def obfuscate():
-    """Apply obfuscation techniques to the uploaded CAPTCHA image."""
-    try:
-        if "image" not in request.files:
-            return jsonify({"error": "Image is required"}), 400
-
-        file = request.files["image"]
-        image = Image.open(file.stream).convert("RGB")
-        img_np = np.array(image)
-
-        obfuscated_img = apply_obfuscation(img_np)
-        obfuscated_pil = Image.fromarray(obfuscated_img)
-        obfuscated_path = "static/obfuscated_captcha.png"
-        obfuscated_pil.save(obfuscated_path)
-
-        return jsonify({"image_url": f"http://127.0.0.1:5000/{obfuscated_path}"})
-
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-def apply_obfuscation(img_np):
-    """Apply obfuscation techniques: distortions, noise, and blurring."""
-    height, width, _ = img_np.shape
-    for i in range(height):
-        offset = int(10 * np.sin(2.0 * np.pi * i / 30))
-        img_np[i] = np.roll(img_np[i], offset, axis=0)
-
-    noise = np.random.randint(0, 50, img_np.shape, dtype="uint8")
-    img_np = cv2.add(img_np, noise)
-    img_np = cv2.GaussianBlur(img_np, (3, 3), 0)
-
-    for _ in range(5):
-        x = np.random.randint(0, width)
-        y = np.random.randint(0, height)
-        cv2.line(img_np, (x, 0), (x, height), (50, 50, 50), 1)
-        cv2.line(img_np, (0, y), (width, y), (50, 50, 50), 1)
-    
-    return img_np
 
 if __name__ == "__main__":
     app.run(debug=True)
