@@ -8,22 +8,39 @@ Follow these steps to set up your environment and run the script.
 
 ---
 
-## **1️⃣ Create a Virtual Environment**
-It is recommended to use a virtual environment to keep dependencies isolated.
+## 🛠️ Setup & Installation
 
-### **Windows (Command Prompt or PowerShell)**
-```sh
-python -m venv captcha_env
-captcha_env\Scripts\activate
+### 1️⃣ Install Dependencies
+
+Ensure you have Python 3.8+ installed. Then, in your project root, run:
+
+``` pip install -r requirements.txt ```
+
+
+### 2️⃣ Configure API Keys
+
+Create a `.env` file in the project root with the following:
+```
+GOOGLE_API_KEY=your_google_gemini_api_key
+MISTRAL_API_KEY=your_mistral_api_key
 ```
 
-### Mac/Linux (Terminal)
-```
-python3 -m venv captcha_env
-source captcha_env/bin/activate
-```
 
-### 2️⃣ Install Dependencies
-```
-pip install -r requirements.txt
-```
+Replace `your_google_gemini_api_key` and `your_mistral_api_key` with your actual API keys.
+
+## 🚀 Running the Project
+
+### 1️⃣ Start the Backend
+
+Run the Flask server:
+
+``` python server.py ```
+
+
+This starts the backend at `http://127.0.0.1:5000/`.
+
+### 2️⃣ Open the Frontend
+
+Open your browser and visit `http://127.0.0.1:5000/` to access the application.
+
+
