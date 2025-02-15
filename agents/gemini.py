@@ -1,23 +1,29 @@
-import time
 import requests
-import google.generativeai as genai
+import os
+import time
+from dotenv import load_dotenv
 from PIL import Image
 from io import BytesIO
-from dotenv import load_dotenv
-import os
+import base64
+import google.generativeai as genai
+from mistralai import Mistral
 
-# 🔹 Load API Key
+# 🔹 Load API Keys from .env
 load_dotenv()
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
+MISTRAL_API_KEY = os.getenv("MISTRAL_API_KEY")
 
 if not GOOGLE_API_KEY:
-    raise ValueError("❌ ERROR: GOOGLE_API_KEY not found. Make sure you have a .env file and it contains the correct API key.")
+    raise ValueError("❌ ERROR: GOOGLE_API_KEY not found in .env file.")
+if not MISTRAL_API_KEY:
+    raise ValueError("❌ ERROR: MISTRAL_API_KEY not found in .env file.")
 
-# 🔹 Initialize Gemini API (Using 1.5 Flash)
+# 🔹 Initialize APIs
 genai.configure(api_key=GOOGLE_API_KEY)
-model = genai.GenerativeModel("gemini-1.5-flash")  # Use updated model
+gemini_model = genai.GenerativeModel("gemini-1.5-flash")
+mistral_client = Mistral(api_key=MISTRAL_API_KEY)
 
-# 🔹 Function to Download CAPTCHA Image from URL
+# 🔹 Function to Download CAPTCHA Image
 def download_captcha(url):
     response = requests.get(url)
     if response.status_code == 200:
@@ -25,42 +31,86 @@ def download_captcha(url):
     else:
         raise Exception("Failed to download CAPTCHA image.")
 
-# 🔹 Function to Convert Image to Raw Bytes (Needed for Gemini)
+# 🔹 Function to Convert Image to Base64
 def encode_image(image):
     buffered = BytesIO()
-    image.save(buffered, format="PNG")  # Save as PNG format
-    return buffered.getvalue()  # Return raw bytes
+    image.save(buffered, format="PNG")
+    return base64.b64encode(buffered.getvalue()).decode('utf-8')
 
-# 🔹 Function to Upload CAPTCHA to Google Gemini and Get the Result
-def solve_captcha(image_url):
+# 🔹 Function to Solve CAPTCHA using Google Gemini
+def solve_with_gemini(image_bytes):
+    try:
+        response = gemini_model.generate_content(
+            [
+                {"mime_type": "image/png", "data": image_bytes},
+                "Extract the text from this CAPTCHA image."
+            ]
+        )
+        return response.text
+    except Exception as e:
+        return f"Gemini Error: {str(e)}"
+
+# 🔹 Function to Solve CAPTCHA using Mistral AI
+def solve_with_mistral(base64_image):
+    try:
+        messages = [
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": "Extract only the CAPTCHA text from this image. Do not include any extra instructions or commentary."
+                    },
+                    {
+                        "type": "image_url",
+                        "image_url": f"data:image/png;base64,{base64_image}"
+                    }
+                ]
+            }
+        ]
+
+        chat_response = mistral_client.chat.complete(
+            model="pixtral-12b-2409",
+            messages=messages
+        )
+
+        return chat_response.choices[0].message.content.strip()
+    except Exception as e:
+        return f"Mistral Error: {str(e)}"
+
+
+# 🔹 Main Function to Solve CAPTCHA (Choose AI Model)
+def solve_captcha(image_url, model="gemini"):
     try:
         start_time = time.time()  # Start timing
 
-        # Download CAPTCHA image
+        # Download CAPTCHA
         captcha_image = download_captcha(image_url)
 
-        # Convert image to raw bytes
-        image_bytes = encode_image(captcha_image)
+        # Convert to appropriate format
+        if model == "gemini":
+            image_data = encode_image(captcha_image)
+            result = solve_with_gemini(image_data)
+        elif model == "mistral":
+            base64_image = encode_image(captcha_image)
+            result = solve_with_mistral(base64_image)
+        else:
+            raise ValueError("Invalid model. Choose 'gemini' or 'mistral'.")
 
-        # Send to Gemini for text recognition
-        response = model.generate_content(
-            [
-                {"mime_type": "image/png", "data": image_bytes},  # Image content
-                "Extract the text from this CAPTCHA image."       # Text prompt
-            ]
-        )
-        
-        end_time = time.time()  # End timing
-        time_taken = round(end_time - start_time, 3)  # Time in seconds
-
-        return response.text, time_taken
+        end_time = time.time()
+        time_taken = round(end_time - start_time, 3)
+        return result, time_taken
     
     except Exception as e:
         return f"Error: {str(e)}", None
 
-# 🔹 Example Usage
+# 🔹 Example Usage (Run with Gemini or Mistral)
 captcha_url = "https://cf-assets.www.cloudflare.com/slt3lc6tev37/3pwMuJ55jpErAafgrWbyTr/e6c487ac6e4288dfe284db72b88ea3d1/captcha.png"
-captcha_text, time_taken = solve_captcha(captcha_url)
 
-print(f"CAPTCHA Solved: {captcha_text}")
-print(f"Time Taken: {time_taken} seconds")
+# Run with Google Gemini
+captcha_text_gemini, time_taken_gemini = solve_captcha(captcha_url, model="gemini")
+print(f"🔵 Gemini CAPTCHA Solved: {captcha_text_gemini} (Time: {time_taken_gemini}s)")
+
+# Run with Mistral AI
+captcha_text_mistral, time_taken_mistral = solve_captcha(captcha_url, model="mistral")
+print(f"🟠 Mistral CAPTCHA Solved: {captcha_text_mistral} (Time: {time_taken_mistral}s)")
