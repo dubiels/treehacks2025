@@ -1,5 +1,11 @@
 import React, { useState } from "react";
-import { Clock, Check, X, Image as ImageIcon } from "lucide-react";
+import {
+    Clock,
+    Check,
+    X,
+    Image as ImageIcon,
+    AlertTriangle,
+} from "lucide-react";
 
 const CaptchaTester = () => {
     const [imageUrl, setImageUrl] = useState("");
@@ -8,9 +14,25 @@ const CaptchaTester = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [obfuscatedImage, setObfuscatedImage] = useState(null);
     const [isObfuscating, setIsObfuscating] = useState(false);
+    const [errorMessage, setErrorMessage] = useState("");
+
+    const isValidImageUrl = (url) => /\.(jpg|jpeg|png)$/i.test(url);
+
+    const handleImageUrlChange = (e) => {
+        const url = e.target.value;
+        setImageUrl(url);
+
+        if (!isValidImageUrl(url) && url.trim() !== "") {
+            setErrorMessage(
+                "Invalid image URL. Only .jpg and .png are supported."
+            );
+        } else {
+            setErrorMessage(""); // Clear the error if it's valid
+        }
+    };
 
     const handleSubmit = async () => {
-        if (!imageUrl || !correctAnswer) return;
+        if (!imageUrl || !correctAnswer || errorMessage) return;
 
         setIsLoading(true);
         setResults(null);
@@ -29,18 +51,20 @@ const CaptchaTester = () => {
 
             if (data.error) {
                 console.error("Error:", data.error);
+                setErrorMessage(`Server Error: ${data.error}`);
             } else {
                 setResults(data.results);
             }
         } catch (error) {
             console.error("Submission error:", error);
+            setErrorMessage("Network error. Please try again.");
         } finally {
             setIsLoading(false);
         }
     };
 
     const handleObfuscate = async () => {
-        if (!imageUrl) return;
+        if (!imageUrl || errorMessage) return;
 
         setIsObfuscating(true);
 
@@ -56,9 +80,11 @@ const CaptchaTester = () => {
                 setObfuscatedImage(data.image_url);
             } else {
                 console.error("Obfuscation failed:", data.error);
+                setErrorMessage(`Server Error: ${data.error}`);
             }
         } catch (error) {
             console.error("Error obfuscating:", error);
+            setErrorMessage("Network error. Please try again.");
         } finally {
             setIsObfuscating(false);
         }
@@ -74,6 +100,13 @@ const CaptchaTester = () => {
                     Instantly test against multiple industry-standard models 👇
                 </p>
 
+                {errorMessage && (
+                    <div className="bg-red-500 text-white px-4 py-2 rounded-lg text-center mb-6 flex items-center gap-2">
+                        <AlertTriangle size={20} />
+                        {errorMessage}
+                    </div>
+                )}
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <div className="space-y-6">
                         <div className="bg-gray-800 rounded-lg p-6">
@@ -83,11 +116,11 @@ const CaptchaTester = () => {
                             <input
                                 type="text"
                                 value={imageUrl}
-                                onChange={(e) => setImageUrl(e.target.value)}
+                                onChange={handleImageUrlChange}
                                 className="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2"
-                                placeholder="Paste CAPTCHA image URL"
+                                placeholder="Paste CAPTCHA image URL (must end in .jpg or .png)"
                             />
-                            {imageUrl && (
+                            {imageUrl && isValidImageUrl(imageUrl) && (
                                 <div className="mt-4">
                                     <img
                                         src={imageUrl}
@@ -115,7 +148,12 @@ const CaptchaTester = () => {
 
                         <button
                             onClick={handleSubmit}
-                            disabled={!imageUrl || !correctAnswer || isLoading}
+                            disabled={
+                                !imageUrl ||
+                                !correctAnswer ||
+                                isLoading ||
+                                errorMessage
+                            }
                             className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed py-3 rounded-lg font-semibold"
                         >
                             {isLoading ? "Testing..." : "Test CAPTCHA"}
@@ -123,7 +161,9 @@ const CaptchaTester = () => {
 
                         <button
                             onClick={handleObfuscate}
-                            disabled={!imageUrl || isObfuscating}
+                            disabled={
+                                !imageUrl || isObfuscating || errorMessage
+                            }
                             className="w-full bg-orange-600 hover:bg-orange-700 disabled:bg-gray-600 disabled:cursor-not-allowed py-3 rounded-lg font-semibold mt-4"
                         >
                             {isObfuscating ? "Obfuscating..." : "Obfuscate"}
