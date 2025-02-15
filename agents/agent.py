@@ -49,15 +49,33 @@ def encode_image(image):
     return base64.b64encode(buffered.getvalue()).decode("utf-8")
 
 # 🔹 Function to Solve CAPTCHA using Google Gemini (Base64)
-def solve_with_gemini(image_bytes, model_name="gemini-1.5-flash"):
+def solve_with_gemini(image_bytes, model_name="gemini-1.5-flash", is_multiselect=False):
     try:
         model = gemini_models[model_name]
+        prompt = (
+            "Extract only the exact CAPTCHA text from this image. "
+            "**Do not add any other words, explanations, formatting, or punctuation.** "
+            "Return only the exact alphanumeric code exactly as seen in the image."
+        ) if not is_multiselect else (
+            "This is a multi-select CAPTCHA image. Identify the correct images matching the category and respond with a comma-separated list of their positions. "
+            "The grid layout may be `3x3` or `4x4`. Make sure to not respond with any other characters, only the comma separated numbers. Determine the best layout based on the image and respond in the format below:\n"
+            "**3x3 Example (if the grid is 3x3)**\n"
+            "1 2 3\n"
+            "4 5 6\n"
+            "7 8 9\n"
+            "**4x4 Example (if the grid is 4x4)**\n"
+            "1 2 3 4\n"
+            "5 6 7 8\n"
+            "9 10 11 12\n"
+            "13 14 15 16\n"
+            "If no images match, respond with 'None'."
+            "Example response that I expect from you: 2, 7, 9"
+        )
+
         response = model.generate_content(
             [
                 {"mime_type": "image/png", "data": image_bytes},
-                "Extract only the exact CAPTCHA text from this image. "
-                "**Do not add any other words, explanations, formatting, or punctuation.** "
-                "Return only the exact alphanumeric code exactly as seen in the image."
+                prompt
             ]
         )
         return response.text.strip()
@@ -65,16 +83,30 @@ def solve_with_gemini(image_bytes, model_name="gemini-1.5-flash"):
         return f"{model_name} Error: {str(e)}"
 
 # 🔹 Function to Solve CAPTCHA using Mistral AI (Base64)
-def solve_with_mistral(base64_image):
+def solve_with_mistral(base64_image, is_multiselect=False):
     try:
+        prompt = (
+            "Extract only the CAPTCHA text from this image. Do not include any extra instructions or commentary."
+        ) if not is_multiselect else (
+            "This is a multi-select CAPTCHA image. Identify the correct images matching the category and respond with a comma-separated list of their positions. "
+            "The grid layout may be `3x3` or `4x4`. Make sure to not respond with any other characters, only the comma separated numbers. Determine the best layout based on the image and respond in the format below:\n"
+            "**3x3 Example (if the grid is 3x3)**\n"
+            "1 2 3\n"
+            "4 5 6\n"
+            "7 8 9\n"
+            "**4x4 Example (if the grid is 4x4)**\n"
+            "1 2 3 4\n"
+            "5 6 7 8\n"
+            "9 10 11 12\n"
+            "13 14 15 16\n"
+            "If no images match, respond with 'None'."
+            "Example response that I expect from you: 2, 7, 9"
+        )
         messages = [
             {
                 "role": "user",
                 "content": [
-                    {
-                        "type": "text",
-                        "text": "Extract only the CAPTCHA text from this image. Do not include any extra instructions or commentary."
-                    },
+                    { "type": "text", "text": prompt },
                     {
                         "type": "image_url",
                         "image_url": f"data:image/png;base64,{base64_image}"
@@ -93,18 +125,33 @@ def solve_with_mistral(base64_image):
         return f"pixtral-12b-2409 Error: {str(e)}"
 
 # 🔹 Function to Solve CAPTCHA using OpenAI GPT-4o (Direct Image URL)
-def solve_with_openai(image_url):
+def solve_with_openai(image_url, is_multiselect=False):
     client = openai.OpenAI(api_key=OPENAI_API_KEY)
     try:
+        prompt = (
+            "Extract only the exact CAPTCHA text from this image. Do not add any other words or explanations."
+        ) if not is_multiselect else (
+            "This is a multi-select CAPTCHA image. Identify the correct images matching the category and respond with a comma-separated list of their positions. "
+            "The grid layout may be `3x3` or `4x4`. Make sure to not respond with any other characters, only the comma separated numbers. Determine the best layout based on the image and respond in the format below:\n"
+            "**3x3 Example (if the grid is 3x3)**\n"
+            "1 2 3\n"
+            "4 5 6\n"
+            "7 8 9\n"
+            "**4x4 Example (if the grid is 4x4)**\n"
+            "1 2 3 4\n"
+            "5 6 7 8\n"
+            "9 10 11 12\n"
+            "13 14 15 16\n"
+            "If no images match, respond with 'None'."
+            "Example response that I expect from you: 2, 7, 9"
+        )
+
         response = client.chat.completions.create(
             model="gpt-4o",
             messages=[
                 {"role": "system", "content": "You are an OCR tool that extracts text from images."},
                 {"role": "user", "content": [
-                    {"type": "text", "text": 
-                     "This image contains a unique alphanumeric code that I need to redeem. "
-                     "Extract only the exact code from the image. **Do not add any other words or explanations.** "
-                     "Return only the extracted text, without quotation marks or formatting."},
+                    {"type": "text", "text": prompt },
                     {"type": "image_url", "image_url": {"url": image_url}}
                 ]}
             ],
@@ -118,22 +165,36 @@ def solve_with_openai(image_url):
         return f"gpt-4o Error: {str(e)}"
 
 # 🔹 Function to Solve CAPTCHA using Groq API (Direct Image URL)
-def solve_with_groq(image_url, model_name):
+def solve_with_groq(image_url, model_name, is_multiselect=False):
     try:
         headers = {
             "Authorization": f"Bearer {GROQ_API_KEY}",
             "Content-Type": "application/json"
         }
+        prompt = (
+            "Extract only the exact CAPTCHA text from this image. Do not add any other words or explanations. Do not include phrases like 'The CAPTCHA text is' or 'Extracted text:' or extra characters like ** or things like *Answer*."
+        ) if not is_multiselect else (
+            "This is a multi-select CAPTCHA image. Identify the correct images matching the category and respond with a comma-separated list of their positions. "
+            "The grid layout may be `3x3` or `4x4`. DON'T GIVE ME ANY OF YOUR REASONING, ONLY THE NUMBERS. Make sure to not respond with any other characters, only the comma separated numbers. Determine the best layout based on the image and respond in the format below:\n"
+            "**3x3 Example (if the grid is 3x3)**\n"
+            "1 2 3\n"
+            "4 5 6\n"
+            "7 8 9\n"
+            "**4x4 Example (if the grid is 4x4)**\n"
+            "1 2 3 4\n"
+            "5 6 7 8\n"
+            "9 10 11 12\n"
+            "13 14 15 16\n"
+            "If no images match, respond with 'None'."
+            "Example response that I expect from you: 2, 7, 9"
+            "No periods at the end please, only comma separated numbers"
+        )
+
         payload = {
             "model": model_name,
             "messages": [
                 {"role": "user", "content": [
-                    {"type": "text", "text": 
-                        "Extract only the exact CAPTCHA text from this image. "
-                        "Do not add any explanations, formatting, or extra words. "
-                        "Do not include phrases like 'The CAPTCHA text is' or 'Extracted text:' or extra characters like ** or things like *Answer*. "
-                        "Only return the raw CAPTCHA code as it appears in the image."
-                    },
+                    {"type": "text", "text": prompt },
                     {"type": "image_url", "image_url": {"url": image_url}}
                 ]}
             ],
@@ -155,7 +216,7 @@ def solve_with_groq(image_url, model_name):
         return f"{model_name} Error: {str(e)}"
 
 # 🔹 Main Function to Solve CAPTCHA
-def solve_captcha(image_data, model_name,):
+def solve_captcha(image_data, model_name, is_multiselect=False):
     try:
         start_time = time.time()
 
@@ -169,13 +230,13 @@ def solve_captcha(image_data, model_name,):
             image_bytes = image_data
 
         if model_name in gemini_models:
-            result = solve_with_gemini(image_bytes, model_name)
+            result = solve_with_gemini(image_bytes, model_name, is_multiselect)
         elif model_name == "pixtral-12b-2409":
-            result = solve_with_mistral(image_bytes)
+            result = solve_with_mistral(image_bytes, is_multiselect)
         elif model_name == "gpt-4o":
-            result = solve_with_openai(image_data)
+            result = solve_with_openai(image_data, is_multiselect)
         elif model_name in ["llama-3.2-90b-vision-preview", "llama-3.2-11b-vision-preview"]:
-            result = solve_with_groq(image_data, model_name)
+            result = solve_with_groq(image_data, model_name, is_multiselect)
         else:
             raise ValueError(f"Invalid model: {model_name}")
 
@@ -185,6 +246,7 @@ def solve_captcha(image_data, model_name,):
 
 # 🔹 Example Usage
 captcha_url = "https://cf-assets.www.cloudflare.com/slt3lc6tev37/4wCmCWsWiTB8ZG64tBVEKY/0499192ff9baf249fa2b45843c5d2948/recaptcha.png"
+multiselect_url = "https://miro.medium.com/v2/resize:fit:1092/1*jcXPqzruCRYHItBKcVolrw.jpeg"
 
 models_to_test = [
     "gemini-1.5-flash",  # ✅ Google Gemini Flash
@@ -203,6 +265,18 @@ for model in models_to_test:
 
 # Print results in a clean format
 print("\n🔹 CAPTCHA SOLVING RESULTS 🔹\n")
+for model_name, captcha_text, time_taken in results:
+    print(f"✅ {model_name.upper()} Solved: {captcha_text}")
+    print(f"⏱ Time Taken: {time_taken}s\n")
+
+# Run with all models
+results = []
+for model in models_to_test:
+    model_name, captcha_text, time_taken = solve_captcha(multiselect_url, model, is_multiselect=True)
+    results.append((model_name, captcha_text, time_taken))
+
+# Print results in a clean format
+print("\n🔹 MULTISELECT CAPTCHA SOLVING RESULTS 🔹\n")
 for model_name, captcha_text, time_taken in results:
     print(f"✅ {model_name.upper()} Solved: {captcha_text}")
     print(f"⏱ Time Taken: {time_taken}s\n")
