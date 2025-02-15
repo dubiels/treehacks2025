@@ -117,7 +117,7 @@ def solve():
         # Process Groq models
         for groq_model in groq_models:
             _, groq_text, groq_time = solve_captcha(image_url, model_name=groq_model, is_multiselect=is_multiselect)
-            results.append({"agent": f"Mistral {groq_model}", "response": groq_text.strip().lower(), "time": f"{groq_time}s", "correct": validation_function(correct_answer, groq_text.strip().lower())})
+            results.append({"agent": f"Groq {groq_model}", "response": groq_text.strip().lower(), "time": f"{groq_time}s", "correct": validation_function(correct_answer, groq_text.strip().lower())})
 
         response = {
             "display_image": image_url,
