@@ -14,6 +14,7 @@ load_dotenv()
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 MISTRAL_API_KEY = os.getenv("MISTRAL_API_KEY")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
 if not GOOGLE_API_KEY:
     raise ValueError("❌ ERROR: GOOGLE_API_KEY not found in .env file.")
@@ -21,6 +22,8 @@ if not MISTRAL_API_KEY:
     raise ValueError("❌ ERROR: MISTRAL_API_KEY not found in .env file.")
 if not OPENAI_API_KEY:
     raise ValueError("❌ ERROR: OPENAI_API_KEY not found in .env file.")
+if not GROQ_API_KEY:
+    raise ValueError("❌ ERROR: GROQ_API_KEY not found in .env file.")
 
 # 🔹 Initialize APIs
 genai.configure(api_key=GOOGLE_API_KEY)
@@ -52,10 +55,12 @@ def solve_with_gemini(image_bytes, model_name="gemini-1.5-flash"):
         response = model.generate_content(
             [
                 {"mime_type": "image/png", "data": image_bytes},
-                "Extract the text from this CAPTCHA image."
+                "Extract only the exact CAPTCHA text from this image. "
+                "**Do not add any other words, explanations, formatting, or punctuation.** "
+                "Return only the exact alphanumeric code exactly as seen in the image."
             ]
         )
-        return response.text
+        return response.text.strip()
     except Exception as e:
         return f"{model_name} Error: {str(e)}"
 
@@ -112,33 +117,69 @@ def solve_with_openai(image_url):
     except Exception as e:
         return f"gpt-4o Error: {str(e)}"
 
-# 🔹 Main Function to Solve CAPTCHA (Gemini/Mistral use Base64, OpenAI uses URL)
-def solve_captcha(image_data, model_name):
+# 🔹 Function to Solve CAPTCHA using Groq API (Direct Image URL)
+def solve_with_groq(image_url, model_name):
+    try:
+        headers = {
+            "Authorization": f"Bearer {GROQ_API_KEY}",
+            "Content-Type": "application/json"
+        }
+        payload = {
+            "model": model_name,
+            "messages": [
+                {"role": "user", "content": [
+                    {"type": "text", "text": 
+                        "Extract only the exact CAPTCHA text from this image. "
+                        "Do not add any explanations, formatting, or extra words. "
+                        "Do not include phrases like 'The CAPTCHA text is' or 'Extracted text:'. "
+                        "Only return the raw CAPTCHA code as it appears in the image."
+                    },
+                    {"type": "image_url", "image_url": {"url": image_url}}
+                ]}
+            ],
+            "max_tokens": 50
+        }
+
+        response = requests.post("https://api.groq.com/openai/v1/chat/completions", json=payload, headers=headers)
+
+        if response.status_code != 200:
+            return f"{model_name} Error: HTTP {response.status_code} - {response.text}"
+
+        response_data = response.json()
+
+        if "choices" not in response_data or not response_data["choices"]:
+            return f"{model_name} Error: No response received"
+
+        return response_data["choices"][0]["message"]["content"].strip()
+    except Exception as e:
+        return f"{model_name} Error: {str(e)}"
+
+# 🔹 Main Function to Solve CAPTCHA
+def solve_captcha(image_data, model_name,):
     try:
         start_time = time.time()
 
         if image_data.startswith("http"):
-            if model_name == "gpt-4o":
-                image_url = image_data  # ✅ Use direct URL for OpenAI
+            if model_name in ["gpt-4o", "llama-3.2-90b-vision-preview", "llama-3.2-11b-vision-preview"]:
+                image_url = image_data  
             else:
                 captcha_image = download_captcha(image_data)
                 image_bytes = encode_image(captcha_image)
         else:
             image_bytes = image_data
 
-        if model_name in ["gemini-1.5-flash", "gemini-1.5-pro"]:
+        if model_name in gemini_models:
             result = solve_with_gemini(image_bytes, model_name)
         elif model_name == "pixtral-12b-2409":
             result = solve_with_mistral(image_bytes)
         elif model_name == "gpt-4o":
             result = solve_with_openai(image_data)
+        elif model_name in ["llama-3.2-90b-vision-preview", "llama-3.2-11b-vision-preview"]:
+            result = solve_with_groq(image_data, model_name)
         else:
             raise ValueError(f"Invalid model: {model_name}")
 
-        end_time = time.time()
-        time_taken = round(end_time - start_time, 3)
-        return model_name, result, time_taken
-    
+        return model_name, result, round(time.time() - start_time, 3)
     except Exception as e:
         return model_name, f"Error: {str(e)}", None
 
@@ -146,13 +187,22 @@ def solve_captcha(image_data, model_name):
 captcha_url = "https://cf-assets.www.cloudflare.com/slt3lc6tev37/4wCmCWsWiTB8ZG64tBVEKY/0499192ff9baf249fa2b45843c5d2948/recaptcha.png"
 
 models_to_test = [
-    "gemini-1.5-flash",  # ✅ Gemini Flash
-    "gemini-1.5-pro",  # ✅ Gemini Pro
+    "gemini-1.5-flash",  # ✅ Google Gemini Flash
+    "gemini-1.5-pro",  # ✅ Google Gemini Pro
     "pixtral-12b-2409",  # ✅ Mistral
-    "gpt-4o"  # ✅ GPT-4o (OpenAI)
+    "gpt-4o",  # ✅ OpenAI GPT-4o
+    "llama-3.2-90b-vision-preview",  # ✅ Groq LLaMA 3 (8B)
+    "llama-3.2-11b-vision-preview"  # ✅ Groq LLaMA 3 (70B)
 ]
 
 # Run with all models
+results = []
 for model in models_to_test:
     model_name, captcha_text, time_taken = solve_captcha(captcha_url, model)
-    print(f"🔹 {model_name.upper()} CAPTCHA Solved: {captcha_text} (Time: {time_taken}s)\n")
+    results.append((model_name, captcha_text, time_taken))
+
+# Print results in a clean format
+print("\n🔹 CAPTCHA SOLVING RESULTS 🔹\n")
+for model_name, captcha_text, time_taken in results:
+    print(f"✅ {model_name.upper()} Solved: {captcha_text}")
+    print(f"⏱ Time Taken: {time_taken}s\n")
