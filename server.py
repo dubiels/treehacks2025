@@ -10,6 +10,8 @@ from PIL import Image
 from agents.agent import solve_captcha, check_text_correctness, check_multiselect_correctness
 import uuid
 import sqlite3
+from PIL import Image
+
 
 # Flask app setup
 app = Flask(__name__, static_folder="dist", static_url_path="/")
@@ -55,8 +57,14 @@ def serve(path):
 
 # ------------------ IMAGE OBFUSCATION & UPLOAD ------------------
 def upload_to_imgur(image_path):
-    """Uploads an image to Imgur and returns the public URL."""
+    """Uploads an image to Imgur and returns the correct direct URL."""
     headers = {"Authorization": f"Client-ID {IMGUR_CLIENT_ID}"}
+
+    # ✅ Detect the actual image format (PNG, JPEG, etc.)
+    with Image.open(image_path) as img:
+        img_format = img.format.lower()  # Convert to lowercase ('png', 'jpeg', etc.)
+
+    # ✅ Upload the image to Imgur
     with open(image_path, "rb") as file:
         response = requests.post(
             "https://api.imgur.com/3/upload",
@@ -66,7 +74,16 @@ def upload_to_imgur(image_path):
 
     data = response.json()
     if data.get("success"):
-        return data["data"]["link"]  # Public Imgur link
+        imgur_id = data["data"]["id"]  # ✅ Get the Imgur image ID
+
+        # ✅ Ensure the correct extension
+        if img_format in ["jpeg", "jpg"]:
+            return f"https://i.imgur.com/{imgur_id}.jpg"
+        elif img_format == "png":
+            return f"https://i.imgur.com/{imgur_id}.png"
+        else:
+            return f"https://i.imgur.com/{imgur_id}"  # Default (just in case)
+
     else:
         raise Exception(f"Imgur upload failed: {data}")
 
@@ -79,10 +96,19 @@ def obfuscate():
             return jsonify({"error": "Image URL is required"}), 400
 
         image_url = data["image_url"]
-        response = requests.get(image_url)
-        if response.status_code != 200:
-            return jsonify({"error": "Failed to fetch image"}), 400
 
+        # ✅ Fetch the image the same way React does
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36"
+        }
+        response = requests.get(image_url, headers=headers, stream=True)
+
+        if response.status_code != 200:
+            return jsonify({"error": f"Failed to fetch image, status code: {response.status_code}"}), 400
+
+        print("✅ Image fetched successfully from:", image_url)  # Debugging
+
+        # ✅ Convert the image to an array
         image = Image.open(io.BytesIO(response.content)).convert("RGB")
         img_np = np.array(image)
 
@@ -90,42 +116,27 @@ def obfuscate():
         obfuscated_img = apply_obfuscation(img_np)
         obfuscated_pil = Image.fromarray(obfuscated_img)
 
-        # Save temporarily (on Windows-friendly path)
+        # Save temporarily
         filename = f"{uuid.uuid4().hex}.png"
-        temp_dir = "public/temp"  # Change /tmp/ to public/temp/
-        
-        # Ensure temp directory exists
+        temp_dir = "public/temp"
+
+        # Ensure directory exists
         if not os.path.exists(temp_dir):
             os.makedirs(temp_dir)
 
         temp_path = os.path.join(temp_dir, filename)
         obfuscated_pil.save(temp_path)
 
-        # Upload to Imgur
+        # ✅ Upload to Imgur
         imgur_url = upload_to_imgur(temp_path)
 
-        # Save Imgur URL to SQLite
+        # ✅ Save the URL in SQLite
         save_image_url_to_db(imgur_url)
 
         return jsonify({"image_url": imgur_url})
 
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-# ------------------ RETRIEVE STORED IMAGE LINKS ------------------
-@app.route("/get_images", methods=["GET"])
-def get_images():
-    """Retrieve stored Imgur image links from SQLite."""
-    try:
-        conn = sqlite3.connect(DATABASE)
-        cursor = conn.cursor()
-        cursor.execute("SELECT url FROM images ORDER BY id DESC LIMIT 10")  # Get last 10 images
-        images = cursor.fetchall()
-        conn.close()
-
-        return jsonify({"images": [img[0] for img in images]})
-
-    except Exception as e:
+        print(f"❌ Error in /obfuscate: {e}")  # Debugging
         return jsonify({"error": str(e)}), 500
 
 # ------------------ CAPTCHA SOLVER ------------------
