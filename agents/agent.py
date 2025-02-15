@@ -131,7 +131,7 @@ def solve_with_groq(image_url, model_name):
                     {"type": "text", "text": 
                         "Extract only the exact CAPTCHA text from this image. "
                         "Do not add any explanations, formatting, or extra words. "
-                        "Do not include phrases like 'The CAPTCHA text is' or 'Extracted text:'. "
+                        "Do not include phrases like 'The CAPTCHA text is' or 'Extracted text:' or extra characters like ** or things like *Answer*. "
                         "Only return the raw CAPTCHA code as it appears in the image."
                     },
                     {"type": "image_url", "image_url": {"url": image_url}}
