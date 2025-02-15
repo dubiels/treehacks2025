@@ -67,15 +67,13 @@ Make sure your package.json includes these scripts:
 ```
 
 ### Running the Application
-
-#### Development Mode
+In one terminal, start server.py:
+```bash
+python server.py
+```
+Leave that running, in another terminal, run:
 ```bash
 npm run dev
 ```
 This will run on http://localhost:5173
 
-#### Production Mode
-```bash
-npm run build
-npm run preview
-```
