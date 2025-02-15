@@ -19,6 +19,33 @@ def serve(path):
         return send_from_directory(app.static_folder, path)
     return send_from_directory(app.static_folder, 'index.html')
 
+@app.route("/obfuscate", methods=["POST"])
+def obfuscate():
+    """Apply obfuscation techniques to the uploaded CAPTCHA image."""
+    try:
+        if "image" not in request.files:
+            return jsonify({"error": "Image is required"}), 400
+
+        file = request.files["image"]
+        image = Image.open(file.stream).convert("RGB")
+        img_np = np.array(image)
+
+        obfuscated_img = apply_obfuscation(img_np)
+        obfuscated_pil = Image.fromarray(obfuscated_img)
+
+        static_dir = "static"
+        if not os.path.exists(static_dir):
+            os.makedirs(static_dir)
+
+        obfuscated_path = os.path.join(static_dir, "obfuscated_captcha.png")
+        obfuscated_pil.save(obfuscated_path)
+
+        return jsonify({"image_url": f"http://127.0.0.1:5000/{obfuscated_path}"})
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route("/solve", methods=["POST"])
 def solve():
     """Handle CAPTCHA solving via an image URL."""
