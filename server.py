@@ -94,6 +94,7 @@ def solve():
         # Solve CAPTCHA using Gemini & Mistral (Base64)
         gemini_models = ["gemini-1.5-flash", "gemini-1.5-pro"]
         mistral_models = ["pixtral-12b-2409"]
+        groq_models = ["llama-3.2-90b-vision-preview", "llama-3.2-11b-vision-preview"]
         
         results = [
             {"agent": "OpenAI GPT-4o", "response": openai_text.strip().lower(), "time": f"{openai_time}s", "correct": openai_text.strip().lower() == correct_answer}
@@ -108,6 +109,11 @@ def solve():
         for mistral_model in mistral_models:
             _, mistral_text, mistral_time = solve_captcha(base64_image, model_name=mistral_model)
             results.append({"agent": f"Mistral {mistral_model}", "response": mistral_text.strip().lower(), "time": f"{mistral_time}s", "correct": mistral_text.strip().lower() == correct_answer})
+
+        # Process Groq models
+        for groq_model in groq_models:
+            _, groq_text, groq_time = solve_captcha(image_url, model_name=groq_model)
+            results.append({"agent": f"Mistral {groq_model}", "response": groq_text.strip().lower(), "time": f"{groq_time}s", "correct": groq_text.strip().lower() == correct_answer})
 
         response = {
             "display_image": image_url,
