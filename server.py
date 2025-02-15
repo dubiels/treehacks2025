@@ -9,11 +9,6 @@ import cv2
 from PIL import Image
 from agents.agent import solve_captcha
 import uuid
-from vercel_blob import PutBlobResult, put_blob, del_blob
-from dotenv import load_dotenv
-
-# Load environment variables
-load_dotenv()
 
 app = Flask(__name__, static_folder="dist", static_url_path="/")
 CORS(app, resources={r"/*": {"origins": "*"}})
@@ -27,7 +22,7 @@ def serve(path):
 
 @app.route("/obfuscate", methods=["POST"])
 def obfuscate():
-    """Apply obfuscation techniques and upload to Vercel Blob."""
+    """Apply obfuscation techniques and return a temporary CAPTCHA link."""
     try:
         data = request.get_json()
         if "image_url" not in data:
@@ -38,51 +33,37 @@ def obfuscate():
         if response.status_code != 200:
             return jsonify({"error": "Failed to fetch image from URL"}), 400
 
-        # Process the image
         image = Image.open(io.BytesIO(response.content)).convert("RGB")
         img_np = np.array(image)
+
+        # Apply obfuscation
         obfuscated_img = apply_obfuscation(img_np)
         obfuscated_pil = Image.fromarray(obfuscated_img)
 
-        # Save to bytes buffer
-        buffer = io.BytesIO()
-        obfuscated_pil.save(buffer, format="PNG")
-        buffer.seek(0)
+        # Generate a unique filename
+        unique_filename = f"{uuid.uuid4().hex}.png"
 
-        # Generate unique filename
-        filename = f"captcha-{uuid.uuid4().hex}.png"
+        # Ensure the static directory exists
+        static_dir = "public/temp"
+        if not os.path.exists(static_dir):
+            os.makedirs(static_dir)
 
-        # Upload to Vercel Blob
-        blob: PutBlobResult = put_blob(
-            path=filename,
-            blob=buffer,
-            options={
-                "access": "public",
-                "addRandomSuffix": True,
-                "expiresIn": 3600  # URL expires in 1 hour
-            }
-        )
+        # Save the obfuscated image
+        obfuscated_path = os.path.join(static_dir, unique_filename)
+        obfuscated_pil.save(obfuscated_path)
 
         return jsonify({
-            "image_url": blob.url
+            "image_url": f"https://treehacks2025-one.vercel.app/temp/{unique_filename}"
         })
 
     except Exception as e:
-        print(f"Error in obfuscate: {str(e)}")  # For debugging
         return jsonify({"error": str(e)}), 500
 
-def apply_obfuscation(img_np):
-    """Apply AI-avoidant obfuscation techniques."""
-    height, width, _ = img_np.shape
-    for i in range(height):
-        offset = int(5 * np.sin(2.0 * np.pi * i / 50))
-        img_np[i] = np.roll(img_np[i], offset, axis=0)
-
-    noise = np.random.normal(0, 15, img_np.shape).astype("uint8")
-    img_np = cv2.add(img_np, noise)
-    img_np = cv2.GaussianBlur(img_np, (3, 3), 0)
-
-    return img_np
+# Serve obfuscated CAPTCHAs dynamically
+@app.route("/temp/<filename>")
+def serve_obfuscated(filename):
+    """Serve temporary CAPTCHA images."""
+    return send_from_directory("public/temp", filename)
 
 @app.route("/solve", methods=["POST"])
 def solve():
@@ -138,6 +119,18 @@ def solve():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+def apply_obfuscation(img_np):
+    """Apply AI-avoidant obfuscation techniques."""
+    height, width, _ = img_np.shape
+    for i in range(height):
+        offset = int(5 * np.sin(2.0 * np.pi * i / 50))
+        img_np[i] = np.roll(img_np[i], offset, axis=0)
+
+    noise = np.random.normal(0, 15, img_np.shape).astype("uint8")
+    img_np = cv2.add(img_np, noise)
+    img_np = cv2.GaussianBlur(img_np, (3, 3), 0)
+
+    return img_np
 
 if __name__ == "__main__":
     app.run(debug=True)
