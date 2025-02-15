@@ -44,7 +44,7 @@ def obfuscate():
         unique_filename = f"{uuid.uuid4().hex}.png"
 
         # Ensure the static directory exists
-        static_dir = "static/temp"
+        static_dir = "public/temp"
         if not os.path.exists(static_dir):
             os.makedirs(static_dir)
 
@@ -53,7 +53,7 @@ def obfuscate():
         obfuscated_pil.save(obfuscated_path)
 
         return jsonify({
-            "image_url": f"http://127.0.0.1:5000/temp/{unique_filename}"
+            "image_url": f"https://treehacks2025-one.vercel.app/temp/{unique_filename}"
         })
 
     except Exception as e:
@@ -63,7 +63,7 @@ def obfuscate():
 @app.route("/temp/<filename>")
 def serve_obfuscated(filename):
     """Serve temporary CAPTCHA images."""
-    return send_from_directory("static/temp", filename)
+    return send_from_directory("public/temp", filename)
 
 @app.route("/solve", methods=["POST"])
 def solve():
