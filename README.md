@@ -77,8 +77,3 @@ npm run dev
 ```
 This will run on http://localhost:5173
 
-#### Production Mode
-```bash
-npm run build
-npm run preview
-```
