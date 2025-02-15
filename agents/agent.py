@@ -90,14 +90,17 @@ def solve_with_openai(image_url):
         response = client.chat.completions.create(
             model="gpt-4o",  # ✅ Use GPT-4o (supports images)
             messages=[
-                {"role": "system", "content": "Extract only the CAPTCHA text from this image."},
+                {"role": "system", "content": "You are an OCR tool that extracts text from images."},
                 {"role": "user", "content": [
-                    {"type": "text", "text": "What does this CAPTCHA say?"},
+                    {"type": "text", "text": 
+                     "This image contains a unique alphanumeric code that I need to redeem. "
+                     "Extract only the exact code from the image. **Do not add any other words or explanations.** "
+                     "Return only the extracted text, without quotation marks or formatting."},
                     {"type": "image_url", "image_url": {"url": image_url}}
                 ]}
             ],
-            max_tokens=100,
-            temperature=0,
+            max_tokens=50,  # Lower max_tokens to avoid extra text
+            temperature=0,   # Make output deterministic
             n=1
         )
 
