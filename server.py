@@ -76,11 +76,8 @@ def solve():
         image_url = data["image_url"]
         correct_answer = data["correct_answer"].strip().lower()
 
-        # Render image on the front end by returning the image URL
-        display_image_url = image_url  
-
         # Solve CAPTCHA using OpenAI (GPT-4o with direct image URL)
-        openai_text, openai_time = solve_captcha(image_url, model="openai")
+        _, openai_text, openai_time = solve_captcha(image_url, model_name="gpt-4o")
 
         # Fetch image from URL for Gemini & Mistral
         response = requests.get(image_url)
@@ -94,23 +91,28 @@ def solve():
         image.save(buffered, format="PNG")
         base64_image = base64.b64encode(buffered.getvalue()).decode("utf-8")
 
-        # Solve CAPTCHA using Gemini & Mistral
-        gemini_text, gemini_time = solve_captcha(base64_image, model="gemini")
-        mistral_text, mistral_time = solve_captcha(base64_image, model="mistral")
+        # Solve CAPTCHA using Gemini & Mistral (Base64)
+        gemini_models = ["gemini-1.5-flash", "gemini-1.5-pro"]
+        mistral_models = ["pixtral-12b-2409"]
+        
+        results = [
+            {"agent": "OpenAI GPT-4o", "response": openai_text.strip().lower(), "time": f"{openai_time}s", "correct": openai_text.strip().lower() == correct_answer}
+        ]
 
-        # Normalize responses
-        gemini_text = gemini_text.strip().lower()
-        mistral_text = mistral_text.strip().lower()
-        openai_text = openai_text.strip().lower()
+        # Process Gemini models
+        for gemini_model in gemini_models:
+            _, gemini_text, gemini_time = solve_captcha(base64_image, model_name=gemini_model)
+            results.append({"agent": f"Google {gemini_model}", "response": gemini_text.strip().lower(), "time": f"{gemini_time}s", "correct": gemini_text.strip().lower() == correct_answer})
+
+        # Process Mistral models
+        for mistral_model in mistral_models:
+            _, mistral_text, mistral_time = solve_captcha(base64_image, model_name=mistral_model)
+            results.append({"agent": f"Mistral {mistral_model}", "response": mistral_text.strip().lower(), "time": f"{mistral_time}s", "correct": mistral_text.strip().lower() == correct_answer})
 
         response = {
-            "display_image": display_image_url,
+            "display_image": image_url,
             "correct_response": correct_answer,
-            "results": [
-                {"agent": "OpenAI", "response": openai_text, "time": f"{openai_time}s", "correct": openai_text == correct_answer},
-                {"agent": "Gemini", "response": gemini_text, "time": f"{gemini_time}s", "correct": gemini_text == correct_answer},
-                {"agent": "Mistral", "response": mistral_text, "time": f"{mistral_time}s", "correct": mistral_text == correct_answer}
-            ]
+            "results": results
         }
         return jsonify(response)
 

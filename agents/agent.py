@@ -7,7 +7,7 @@ from PIL import Image
 from io import BytesIO
 import google.generativeai as genai
 from mistralai import Mistral
-import openai  # 🔹 Import OpenAI library
+import openai  # OpenAI library
 
 # 🔹 Load API Keys from .env
 load_dotenv()
@@ -24,9 +24,12 @@ if not OPENAI_API_KEY:
 
 # 🔹 Initialize APIs
 genai.configure(api_key=GOOGLE_API_KEY)
-gemini_model = genai.GenerativeModel("gemini-1.5-flash")
+gemini_models = {
+    "gemini-1.5-flash": genai.GenerativeModel("gemini-1.5-flash"),
+    "gemini-1.5-pro": genai.GenerativeModel("gemini-1.5-pro")
+}
 mistral_client = Mistral(api_key=MISTRAL_API_KEY)
-openai.api_key = OPENAI_API_KEY  # 🔹 Set OpenAI API key
+openai.api_key = OPENAI_API_KEY
 
 # 🔹 Function to Download CAPTCHA Image
 def download_captcha(url):
@@ -40,12 +43,13 @@ def download_captcha(url):
 def encode_image(image):
     buffered = BytesIO()
     image.save(buffered, format="PNG")
-    return base64.b64encode(buffered.getvalue()).decode('utf-8')
+    return base64.b64encode(buffered.getvalue()).decode("utf-8")
 
 # 🔹 Function to Solve CAPTCHA using Google Gemini (Base64)
-def solve_with_gemini(image_bytes):
+def solve_with_gemini(image_bytes, model_name="gemini-1.5-flash"):
     try:
-        response = gemini_model.generate_content(
+        model = gemini_models[model_name]
+        response = model.generate_content(
             [
                 {"mime_type": "image/png", "data": image_bytes},
                 "Extract the text from this CAPTCHA image."
@@ -53,7 +57,7 @@ def solve_with_gemini(image_bytes):
         )
         return response.text
     except Exception as e:
-        return f"Gemini Error: {str(e)}"
+        return f"{model_name} Error: {str(e)}"
 
 # 🔹 Function to Solve CAPTCHA using Mistral AI (Base64)
 def solve_with_mistral(base64_image):
@@ -81,14 +85,14 @@ def solve_with_mistral(base64_image):
 
         return chat_response.choices[0].message.content.strip()
     except Exception as e:
-        return f"Mistral Error: {str(e)}"
+        return f"pixtral-12b-2409 Error: {str(e)}"
 
 # 🔹 Function to Solve CAPTCHA using OpenAI GPT-4o (Direct Image URL)
 def solve_with_openai(image_url):
     client = openai.OpenAI(api_key=OPENAI_API_KEY)
     try:
         response = client.chat.completions.create(
-            model="gpt-4o",  # ✅ Use GPT-4o (supports images)
+            model="gpt-4o",
             messages=[
                 {"role": "system", "content": "You are an OCR tool that extracts text from images."},
                 {"role": "user", "content": [
@@ -99,60 +103,56 @@ def solve_with_openai(image_url):
                     {"type": "image_url", "image_url": {"url": image_url}}
                 ]}
             ],
-            max_tokens=50,  # Lower max_tokens to avoid extra text
-            temperature=0,   # Make output deterministic
+            max_tokens=50,
+            temperature=0,
             n=1
         )
 
         return response.choices[0].message.content.strip()
     except Exception as e:
-        return f"OpenAI Error: {str(e)}"
+        return f"gpt-4o Error: {str(e)}"
 
 # 🔹 Main Function to Solve CAPTCHA (Gemini/Mistral use Base64, OpenAI uses URL)
-def solve_captcha(image_data, model="gemini"):
+def solve_captcha(image_data, model_name):
     try:
         start_time = time.time()
 
-        # Check if input is a URL
         if image_data.startswith("http"):
-            if model == "openai":
+            if model_name == "gpt-4o":
                 image_url = image_data  # ✅ Use direct URL for OpenAI
             else:
-                # Download and convert to Base64 for Gemini & Mistral
                 captcha_image = download_captcha(image_data)
                 image_bytes = encode_image(captcha_image)
         else:
-            # If already Base64, use it directly for Gemini & Mistral
             image_bytes = image_data
 
-        # Solve based on the model
-        if model == "gemini":
-            result = solve_with_gemini(image_bytes)
-        elif model == "mistral":
+        if model_name in ["gemini-1.5-flash", "gemini-1.5-pro"]:
+            result = solve_with_gemini(image_bytes, model_name)
+        elif model_name == "pixtral-12b-2409":
             result = solve_with_mistral(image_bytes)
-        elif model == "openai":
-            result = solve_with_openai(image_data)  # ✅ Use URL for OpenAI
+        elif model_name == "gpt-4o":
+            result = solve_with_openai(image_data)
         else:
-            raise ValueError("Invalid model. Choose 'gemini', 'mistral', or 'openai'.")
+            raise ValueError(f"Invalid model: {model_name}")
 
         end_time = time.time()
         time_taken = round(end_time - start_time, 3)
-        return result, time_taken
+        return model_name, result, time_taken
     
     except Exception as e:
-        return f"Error: {str(e)}", None
+        return model_name, f"Error: {str(e)}", None
 
-# 🔹 Example Usage (Gemini & Mistral Use Base64, OpenAI Uses URL)
-captcha_url = "https://cf-assets.www.cloudflare.com/slt3lc6tev37/3pwMuJ55jpErAafgrWbyTr/e6c487ac6e4288dfe284db72b88ea3d1/captcha.png"
+# 🔹 Example Usage
+captcha_url = "https://cf-assets.www.cloudflare.com/slt3lc6tev37/4wCmCWsWiTB8ZG64tBVEKY/0499192ff9baf249fa2b45843c5d2948/recaptcha.png"
 
-# Run with Google Gemini (Base64)
-captcha_text_gemini, time_taken_gemini = solve_captcha(captcha_url, model="gemini")
-print(f"🔵 Gemini CAPTCHA Solved: {captcha_text_gemini} (Time: {time_taken_gemini}s)")
+models_to_test = [
+    "gemini-1.5-flash",  # ✅ Gemini Flash
+    "gemini-1.5-pro",  # ✅ Gemini Pro
+    "pixtral-12b-2409",  # ✅ Mistral
+    "gpt-4o"  # ✅ GPT-4o (OpenAI)
+]
 
-# Run with Mistral AI (Base64)
-captcha_text_mistral, time_taken_mistral = solve_captcha(captcha_url, model="mistral")
-print(f"🟠 Mistral CAPTCHA Solved: {captcha_text_mistral} (Time: {time_taken_mistral}s)")
-
-# Run with OpenAI GPT-4o (URL)
-captcha_text_openai, time_taken_openai = solve_captcha(captcha_url, model="openai")
-print(f"🟣 OpenAI GPT-4o CAPTCHA Solved: {captcha_text_openai} (Time: {time_taken_openai}s)")
+# Run with all models
+for model in models_to_test:
+    model_name, captcha_text, time_taken = solve_captcha(captcha_url, model)
+    print(f"🔹 {model_name.upper()} CAPTCHA Solved: {captcha_text} (Time: {time_taken}s)\n")
