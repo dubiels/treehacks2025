@@ -8,6 +8,7 @@ import numpy as np
 import cv2
 from PIL import Image
 from agents.agent import solve_captcha
+import uuid
 
 app = Flask(__name__, static_folder="dist", static_url_path="/")
 CORS(app, resources={r"/*": {"origins": "*"}})
@@ -21,7 +22,7 @@ def serve(path):
 
 @app.route("/obfuscate", methods=["POST"])
 def obfuscate():
-    """Apply obfuscation techniques to the uploaded CAPTCHA image."""
+    """Apply obfuscation techniques and return a temporary CAPTCHA link."""
     try:
         data = request.get_json()
         if "image_url" not in data:
@@ -35,20 +36,34 @@ def obfuscate():
         image = Image.open(io.BytesIO(response.content)).convert("RGB")
         img_np = np.array(image)
 
+        # Apply obfuscation
         obfuscated_img = apply_obfuscation(img_np)
         obfuscated_pil = Image.fromarray(obfuscated_img)
 
-        static_dir = "static"
+        # Generate a unique filename
+        unique_filename = f"{uuid.uuid4().hex}.png"
+
+        # Ensure the static directory exists
+        static_dir = "static/temp"
         if not os.path.exists(static_dir):
             os.makedirs(static_dir)
 
-        obfuscated_path = os.path.join(static_dir, "obfuscated_captcha.png")
+        # Save the obfuscated image
+        obfuscated_path = os.path.join(static_dir, unique_filename)
         obfuscated_pil.save(obfuscated_path)
 
-        return jsonify({"image_url": f"http://127.0.0.1:5000/{obfuscated_path}"})
+        return jsonify({
+            "image_url": f"http://127.0.0.1:5000/temp/{unique_filename}"
+        })
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+# Serve obfuscated CAPTCHAs dynamically
+@app.route("/temp/<filename>")
+def serve_obfuscated(filename):
+    """Serve temporary CAPTCHA images."""
+    return send_from_directory("static/temp", filename)
 
 @app.route("/solve", methods=["POST"])
 def solve():
