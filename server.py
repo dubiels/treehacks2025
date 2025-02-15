@@ -101,7 +101,7 @@ def solve():
         groq_models = ["llama-3.2-90b-vision-preview", "llama-3.2-11b-vision-preview"]
 
         results = [
-            # {"agent": "OpenAI GPT-4o", "response": openai_text.strip().lower(), "time": f"{openai_time}s", "correct": validation_function(correct_answer, openai_text.strip().lower())}
+            {"agent": "OpenAI GPT-4o", "response": openai_text.strip().lower(), "time": f"{openai_time}s", "correct": validation_function(correct_answer, openai_text.strip().lower())}
         ]
 
         # Process Gemini models
