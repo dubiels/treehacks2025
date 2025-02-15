@@ -23,11 +23,16 @@ def serve(path):
 def obfuscate():
     """Apply obfuscation techniques to the uploaded CAPTCHA image."""
     try:
-        if "image" not in request.files:
-            return jsonify({"error": "Image is required"}), 400
+        data = request.get_json()
+        if "image_url" not in data:
+            return jsonify({"error": "Image URL is required"}), 400
 
-        file = request.files["image"]
-        image = Image.open(file.stream).convert("RGB")
+        image_url = data["image_url"]
+        response = requests.get(image_url)
+        if response.status_code != 200:
+            return jsonify({"error": "Failed to fetch image from URL"}), 400
+
+        image = Image.open(io.BytesIO(response.content)).convert("RGB")
         img_np = np.array(image)
 
         obfuscated_img = apply_obfuscation(img_np)
@@ -44,7 +49,6 @@ def obfuscate():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
 
 @app.route("/solve", methods=["POST"])
 def solve():
@@ -97,6 +101,19 @@ def solve():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+def apply_obfuscation(img_np):
+    """Apply AI-avoidant obfuscation techniques."""
+    height, width, _ = img_np.shape
+    for i in range(height):
+        offset = int(5 * np.sin(2.0 * np.pi * i / 50))
+        img_np[i] = np.roll(img_np[i], offset, axis=0)
+
+    noise = np.random.normal(0, 15, img_np.shape).astype("uint8")
+    img_np = cv2.add(img_np, noise)
+    img_np = cv2.GaussianBlur(img_np, (3, 3), 0)
+
+    return img_np
 
 if __name__ == "__main__":
     app.run(debug=True)
