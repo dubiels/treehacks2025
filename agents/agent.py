@@ -244,6 +244,33 @@ def solve_captcha(image_data, model_name, is_multiselect=False):
     except Exception as e:
         return model_name, f"Error: {str(e)}", None
 
+def check_multiselect_correctness(correct_response, ai_response):
+    """
+    Checks if the AI model's multi-select CAPTCHA response matches the correct response.
+    
+    Args:
+        correct_response (str): The correct selection string, e.g., "1,4,5".
+        ai_response (str): The AI model's response, e.g., "1, 4, 5" or "**3x3**\n1, 2, 3".
+
+    Returns:
+        bool: True if the AI response matches the correct response, False otherwise.
+    """
+    try:
+        # Convert correct response into a set of integers
+        correct_set = set(map(int, correct_response.split(",")))
+
+        # Extract only numeric values from AI response
+        ai_response = ai_response.strip()
+        ai_numbers = ai_response.split("\n")[-1]  # Take the last line if format includes **3x3**
+        ai_set = set(map(int, ai_numbers.replace(" ", "").split(",")))
+
+        # Compare sets
+        return ai_set == correct_set
+
+    except Exception:
+        # Handle errors (e.g., invalid AI response)
+        return False
+    
 # 🔹 Example Usage
 captcha_url = "https://cf-assets.www.cloudflare.com/slt3lc6tev37/4wCmCWsWiTB8ZG64tBVEKY/0499192ff9baf249fa2b45843c5d2948/recaptcha.png"
 multiselect_url = "https://miro.medium.com/v2/resize:fit:1092/1*jcXPqzruCRYHItBKcVolrw.jpeg"
