@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { Clock, Check, X, AlertTriangle, Circle, Loader } from "lucide-react";
+import "../styles.css";
 
 const CaptchaTester = () => {
   const [imageUrl, setImageUrl] = useState("");
@@ -242,8 +243,7 @@ const CaptchaTester = () => {
 
   return (
     <div className="flex">
-      <div className="w-1/4 p-4 overflow-y-auto h-screen">
-        <h2 className="text-xl font-bold mb-4">Database Images</h2>
+      <div className="w-1/4 p-8 overflow-y-auto h-screen bg-gray-900 text-white">
         <div className="flex flex-col-reverse">
           {databaseImages.map((url, index) => (
             <img
@@ -257,7 +257,7 @@ const CaptchaTester = () => {
         </div>
       </div>
 
-      <div className="w-3/4 p-4">
+      <div className="w-3/4">
         <div className="min-h-screen bg-gray-900 text-white p-8">
           <div className="max-w-6xl mx-auto">
             <h1 className="text-4xl font-bold text-center mb-2 mt-12">
