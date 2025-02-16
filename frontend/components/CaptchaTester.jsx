@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { Clock, Check, X, AlertTriangle, Circle, Loader } from "lucide-react";
 import "../styles.css";
+import defaultImage from "../components/default.png"; // Adjust path based on actual location
 
 const CaptchaTester = () => {
     const [imageUrl, setImageUrl] = useState("");
@@ -303,17 +304,27 @@ const CaptchaTester = () => {
                 <h2 className="text-lg font-semibold text-white mb-4">
                     History
                 </h2>
-                <div className="flex flex-col-reverse">
-                    {databaseImages.map((url, index) => (
-                        <img
-                            key={index}
-                            src={url}
-                            alt={`Database image ${index}`}
-                            className="w-full mb-2 rounded cursor-pointer hover:opacity-80 transition-opacity"
-                            onClick={() => handleImageClick(url)}
-                        />
-                    ))}
-                </div>
+
+                {/* ✅ Show Default Image if No Images in DB */}
+                {databaseImages.length === 0 ? (
+                    <img
+                        src={defaultImage}
+                        alt="Default placeholder"
+                        className="w-full rounded opacity-50"
+                    />
+                ) : (
+                    <div className="flex flex-col-reverse">
+                        {databaseImages.map((url, index) => (
+                            <img
+                                key={index}
+                                src={url}
+                                alt={`Database image ${index}`}
+                                className="w-full mb-2 rounded cursor-pointer hover:opacity-80 transition-opacity"
+                                onClick={() => handleImageClick(url)}
+                            />
+                        ))}
+                    </div>
+                )}
             </div>
 
             <div className="w-3/4">
