@@ -262,12 +262,12 @@ const CaptchaTester = () => {
     <div className="flex">
       <div className="w-1/4 p-8 overflow-y-auto h-screen bg-gray-900 text-white">
         <div className="flex flex-col-reverse">
-          <button
+          {/* <button
             onClick={handleClearDatabase}
             className="bg-red-600 hover:bg-red-700 text-white text-sm px-3 py-1 rounded-lg"
           >
             Clear All
-          </button>
+          </button> */}
           {databaseImages.map((url, index) => (
             <img
               key={index}
