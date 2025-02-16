@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { Clock, Check, X, AlertTriangle, Circle, Loader } from "lucide-react";
+import "../styles.css";
+import defaultImage from "../components/default.png"; // Adjust path based on actual location
 
 const CaptchaTester = () => {
   const [imageUrl, setImageUrl] = useState("");
@@ -31,7 +33,7 @@ const CaptchaTester = () => {
   // ✅ Dynamically determine models based on isMultiselect
   const models = useMemo(() => {
     const baseModels = [
-      // "OpenAI GPT-4o",
+      "OpenAI GPT-4o",
       "Google gemini-1.5-flash",
       "Google gemini-2.0-flash",
       "Mistral pixtral-12b-2409",
@@ -59,7 +61,7 @@ const CaptchaTester = () => {
   const isValidImageUrl = (url) => /\.(jpg|jpeg|png)$/i.test(url);
 
   const handleImageUrlChange = async (e) => {
-    const url = typeof e === 'string' ? e : e.target.value;
+    const url = typeof e === "string" ? e : e.target.value;
     setImageUrl(url);
 
     const isValid = /\.(jpg|jpeg|png)$/i.test(url);
@@ -84,6 +86,30 @@ const CaptchaTester = () => {
     }
   };
 
+  const handleStartFresh = async () => {
+    try {
+      const response = await fetch(
+        "http://127.0.0.1:5000/clear_database",
+        {
+          method: "POST",
+        }
+      );
+
+      const data = await response.json();
+      if (data.success) {
+        console.log("✅ Database cleared!");
+        setDatabaseImages([]); // ✅ Instantly update UI
+        setImageUrl(""); // ✅ Reset image input
+        setCorrectAnswer(""); // ✅ Reset correct answer
+        setResults([]); // ✅ Clear results
+        window.location.reload(); // ✅ Force refresh the page
+      } else {
+        console.error("❌ Error clearing database:", data.error);
+      }
+    } catch (error) {
+      console.error("❌ Network error:", error);
+    }
+  };
 
   const handleSubmit = async () => {
     if (!imageUrl || !correctAnswer || errorMessage) return;
@@ -249,7 +275,10 @@ const CaptchaTester = () => {
         return <Circle className="text-gray-500" size={iconSize} />;
       case "loading":
         return (
-          <Loader className="text-blue-500 animate-spin" size={iconSize} />
+          <Loader
+            className="text-blue-500 animate-spin"
+            size={iconSize}
+          />
         );
       case "completed":
         return correct ? (
@@ -267,32 +296,73 @@ const CaptchaTester = () => {
     handleImageUrlChange({ target: { value: url } });
   };
 
+  const handleClearDatabase = async () => {
+    try {
+      const response = await fetch(
+        "http://127.0.0.1:5000/clear_database",
+        {
+          method: "POST",
+        }
+      );
+
+      const data = await response.json();
+      if (data.success) {
+        console.log("✅ Database cleared!");
+        setDatabaseImages([]); // ✅ Instantly update UI
+      } else {
+        console.error("❌ Error clearing database:", data.error);
+      }
+    } catch (error) {
+      console.error("❌ Network error:", error);
+    }
+  };
 
   return (
-    <div className="flex">
-      <div className="w-1/4 p-4 overflow-y-auto h-screen">
-        <h2 className="text-xl font-bold mb-4">Database Images</h2>
-        <div className="flex flex-col-reverse">
-          {databaseImages.map((url, index) => (
-            <img
-              key={index}
-              src={url}
-              alt={`Database image ${index}`}
-              className="w-full mb-2 rounded cursor-pointer hover:opacity-80 transition-opacity"
-              onClick={() => handleImageClick(url)}
-            />
-          ))}
-        </div>
+    <div className="bg-gray-900 min-h-screen flex">
+      <div className="w-1/4 p-8 overflow-y-auto h-screen bg-gray-900 text-white">
+        {/* ✅ "Start Fresh" Button at the Top */}
+        <button
+          onClick={handleStartFresh}
+          className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg mb-4"
+        >
+          Start Fresh
+        </button>
+
+        {/* ✅ "History" Label */}
+        <h2 className="text-lg font-semibold text-white mb-4">
+          History
+        </h2>
+        {/* ✅ Show Default Image if No Images in DB */}
+        {databaseImages.length === 0 ? (
+          <img
+            src={defaultImage}
+            alt="Default placeholder"
+            className="w-full rounded opacity-50"
+          />
+        ) : (
+          <div className="flex flex-col-reverse">
+            {databaseImages.map((url, index) => (
+              <img
+                key={index}
+                src={url}
+                alt={`Database image ${index}`}
+                className="w-full mb-2 rounded cursor-pointer hover:opacity-80 transition-opacity"
+                onClick={() => handleImageClick(url)}
+              />
+            ))}
+          </div>
+        )}
       </div>
 
-      <div className="w-3/4 p-4">
+      <div className="w-3/4">
         <div className="min-h-screen bg-gray-900 text-white p-8">
           <div className="max-w-6xl mx-auto">
             <h1 className="text-4xl font-bold text-center mb-2 mt-12">
               Are your CAPTCHAs AI-resistant?
             </h1>
             <p className="text-gray-400 text-center mb-12">
-              Instantly test against multiple industry-standard models 👇
+              Instantly test against multiple industry-standard
+              models 👇
             </p>
 
             {errorMessage && (
@@ -305,23 +375,36 @@ const CaptchaTester = () => {
             {/* ✅ Improved Toggle for CAPTCHA Type */}
             <div className="flex items-center justify-center mb-6">
               <span
-                className={`text-sm font-medium ${!isMultiselect ? "text-white" : "text-gray-400"
+                className={`text-sm font-medium ${!isMultiselect
+                  ? "text-white"
+                  : "text-gray-400"
                   }`}
               >
                 Text CAPTCHA
               </span>
               <div
-                className={`relative flex items-center w-14 h-7 mx-3 bg-gray-600 rounded-full cursor-pointer transition-all ${isMultiselect ? "bg-green-500" : "bg-gray-500"
+                className={`relative flex items-center w-14 h-7 mx-3 bg-gray-600 rounded-full cursor-pointer transition-all ${isMultiselect
+                  ? "bg-green-500"
+                  : "bg-gray-500"
                   }`}
-                onClick={() => setIsMultiselect(!isMultiselect)}
+                onClick={() => {
+                  setIsMultiselect(!isMultiselect);
+                  setImageUrl(""); // ✅ Clear image URL when switching modes
+                  setCorrectAnswer(""); // ✅ Clear correct response field
+                }}
               >
                 <div
-                  className={`absolute w-6 h-6 bg-white rounded-full shadow-md transform transition-all ${isMultiselect ? "translate-x-7" : "translate-x-1"
+                  className={`absolute w-6 h-6 bg-white rounded-full shadow-md transform transition-all ${isMultiselect
+                    ? "translate-x-7"
+                    : "translate-x-1"
                     }`}
                 />
               </div>
+
               <span
-                className={`text-sm font-medium ${isMultiselect ? "text-white" : "text-gray-400"
+                className={`text-sm font-medium ${isMultiselect
+                  ? "text-white"
+                  : "text-gray-400"
                   }`}
               >
                 Image Multi-Select CAPTCHA
@@ -361,7 +444,9 @@ const CaptchaTester = () => {
                   <input
                     type="text"
                     value={correctAnswer}
-                    onChange={(e) => setCorrectAnswer(e.target.value)}
+                    onChange={(e) =>
+                      setCorrectAnswer(e.target.value)
+                    }
                     className="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2"
                     placeholder={
                       isMultiselect
@@ -374,7 +459,10 @@ const CaptchaTester = () => {
                 <button
                   onClick={handleSubmit}
                   disabled={
-                    !imageUrl || !correctAnswer || isLoading || errorMessage
+                    !imageUrl ||
+                    !correctAnswer ||
+                    isLoading ||
+                    errorMessage
                   }
                   className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed py-3 rounded-lg font-semibold"
                 >
@@ -384,16 +472,40 @@ const CaptchaTester = () => {
                 <div className="flex gap-4">
                   <button
                     onClick={handleObfuscate}
-                    disabled={!imageUrl || isObfuscating || errorMessage}
-                    className="w-1/3 bg-orange-600 hover:bg-orange-700 disabled:bg-gray-600 disabled:cursor-not-allowed py-3 rounded-lg font-semibold mt-4"
+                    disabled={
+                      isMultiselect ||
+                      !imageUrl ||
+                      isObfuscating ||
+                      errorMessage
+                    } // ✅ Disabled if isMultiselect is true
+                    className={`w-1/3 py-3 rounded-lg font-semibold mt-4 ${isMultiselect ||
+                      !imageUrl ||
+                      isObfuscating ||
+                      errorMessage
+                      ? "bg-gray-600 cursor-not-allowed"
+                      : "bg-orange-600 hover:bg-orange-700"
+                      }`}
                   >
-                    {isObfuscating ? "Obfuscating..." : "Obfuscate (Noise)"}
+                    {isObfuscating
+                      ? "Obfuscating..."
+                      : "Obfuscate (Noise)"}
                   </button>
 
                   <button
                     onClick={handleObfuscate2}
-                    disabled={!imageUrl || isObfuscating2 || errorMessage}
-                    className="w-1/3 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 disabled:cursor-not-allowed py-3 rounded-lg font-semibold mt-4"
+                    disabled={
+                      isMultiselect ||
+                      !imageUrl ||
+                      isObfuscating2 ||
+                      errorMessage
+                    } // ✅ Disabled if isMultiselect is true
+                    className={`w-1/3 py-3 rounded-lg font-semibold mt-4 ${isMultiselect ||
+                      !imageUrl ||
+                      isObfuscating2 ||
+                      errorMessage
+                      ? "bg-gray-600 cursor-not-allowed"
+                      : "bg-purple-600 hover:bg-purple-700"
+                      }`}
                   >
                     {isObfuscating2
                       ? "Obfuscating..."
@@ -402,8 +514,19 @@ const CaptchaTester = () => {
 
                   <button
                     onClick={handleObfuscate3}
-                    disabled={!imageUrl || isObfuscating3 || errorMessage}
-                    className="w-1/3 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed py-3 rounded-lg font-semibold mt-4"
+                    disabled={
+                      isMultiselect ||
+                      !imageUrl ||
+                      isObfuscating3 ||
+                      errorMessage
+                    } // ✅ Disabled if isMultiselect is true
+                    className={`w-1/3 py-3 rounded-lg font-semibold mt-4 ${isMultiselect ||
+                      !imageUrl ||
+                      isObfuscating3 ||
+                      errorMessage
+                      ? "bg-gray-600 cursor-not-allowed"
+                      : "bg-green-600 hover:bg-green-700"
+                      }`}
                   >
                     {isObfuscating3
                       ? "Obfuscating..."
@@ -426,7 +549,10 @@ const CaptchaTester = () => {
                     >
                       <div className="flex items-center gap-2">
                         <div className="w-6 h-6 flex items-center justify-center">
-                          {getStatusIcon(result.status, result.correct)}
+                          {getStatusIcon(
+                            result.status,
+                            result.correct
+                          )}
                         </div>
                         {result.agent}
                       </div>

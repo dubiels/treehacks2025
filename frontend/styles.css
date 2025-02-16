@@ -1,0 +1,24 @@
+/* Custom Scrollbar - FORCE APPLY */
+::-webkit-scrollbar {
+    width: 8px !important; /* Adjust width */
+  }
+  
+  ::-webkit-scrollbar-track {
+    background: #111827 !important; /* Dark background */
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    background: #374151 !important; /* Darker scrollbar */
+    border-radius: 10px !important;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    background: #4b5563 !important; /* Lighter on hover */
+  }
+  
+  /* For Firefox */
+  * {
+    scrollbar-width: thin !important;
+    scrollbar-color: #374151 #111827 !important; /* Thumb color | Track color */
+  }
+  
