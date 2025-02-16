@@ -314,6 +314,7 @@ def solve():
         correct_answer = data["correct_answer"].strip().lower()
 
         # Solve CAPTCHA using OpenAI (GPT-4o with direct image URL)
+        # TODO uncomment
         # _, openai_text, openai_time = solve_captcha(image_url, model_name="gpt-4o", is_multiselect=is_multiselect)
 
         # Fetch image from URL for Gemini & Mistral
@@ -337,7 +338,7 @@ def solve():
         mistral_models = ["pixtral-12b-2409"]
         groq_models = ["llama-3.2-90b-vision-preview", "llama-3.2-11b-vision-preview"]
 
-        results = [
+        results = [ # TODO uncomment
             # {"agent": "OpenAI GPT-4o", "response": openai_text.strip().lower(), "time": f"{openai_time}s", "correct": validation_function(correct_answer, openai_text.strip().lower())}
         ]
 

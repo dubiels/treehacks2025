@@ -32,7 +32,7 @@ const CaptchaTester = () => {
     // ✅ Dynamically determine models based on isMultiselect
     const models = useMemo(() => {
         const baseModels = [
-            // "OpenAI GPT-4o",
+            "OpenAI GPT-4o",
             "Google gemini-1.5-flash",
             "Google gemini-2.0-flash",
             "Mistral pixtral-12b-2409",
