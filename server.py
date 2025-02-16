@@ -316,6 +316,7 @@ def obfuscate3():
         app.run(debug=True)
 
 # ------------------ CAPTCHA SOLVER ------------------
+
 @app.route("/solve", methods=["POST"])
 def solve():
     """Handle CAPTCHA solving via an image URL."""
@@ -332,6 +333,7 @@ def solve():
         correct_answer = data["correct_answer"].strip().lower()
 
         # Solve CAPTCHA using OpenAI (GPT-4o with direct image URL)
+        # TODO uncomment
         # _, openai_text, openai_time = solve_captcha(image_url, model_name="gpt-4o", is_multiselect=is_multiselect)
 
         # Fetch image from URL for Gemini & Mistral
@@ -356,6 +358,7 @@ def solve():
         groq_models = ["llama-3.2-90b-vision-preview", "llama-3.2-11b-vision-preview"]
 
         results = [
+            # TODO uncomment
             # {"agent": "OpenAI GPT-4o", "response": openai_text.strip().lower(), "time": f"{openai_time}s", "correct": validation_function(correct_answer, openai_text.strip().lower())}
         ]
 
@@ -578,13 +581,17 @@ def segment_text(image):
 
 @app.route("/clear_database", methods=["POST"])
 def clear_database():
-    """Deletes all stored images and returns success."""
+    """Clears all stored images from the database and refreshes history."""
     try:
-        for file in os.listdir(IMAGE_STORAGE_PATH):
-            file_path = os.path.join(IMAGE_STORAGE_PATH, file)
-            if os.path.isfile(file_path):
-                os.remove(file_path)
+        conn = sqlite3.connect(DATABASE)
+        cursor = conn.cursor()
+        
+        # Delete all rows
+        cursor.execute("DELETE FROM images")
+        conn.commit()
+        conn.close()
 
+        print("✅ Database cleared successfully.")
         return jsonify({"success": True, "message": "Database cleared."})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
