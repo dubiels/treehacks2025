@@ -58,16 +58,16 @@ const CaptchaTester = () => {
   const isValidImageUrl = (url) => /\.(jpg|jpeg|png)$/i.test(url);
 
   const handleImageUrlChange = async (e) => {
-    const url = typeof e === 'string' ? e : e.target.value;
+    const url = typeof e === "string" ? e : e.target.value;
     setImageUrl(url);
-  
+
     const isValid = /\.(jpg|jpeg|png)$/i.test(url);
     setErrorMessage(
       !isValid && url.trim() !== ""
         ? "Invalid image URL. Only .jpg and .png are supported."
         : ""
     );
-  
+
     if (isValid) {
       try {
         await fetch("http://127.0.0.1:5000/save_image_url", {
@@ -82,7 +82,6 @@ const CaptchaTester = () => {
       }
     }
   };
-  
 
   const handleSubmit = async () => {
     if (!imageUrl || !correctAnswer || errorMessage) return;
@@ -239,12 +238,36 @@ const CaptchaTester = () => {
     setImageUrl(url);
     handleImageUrlChange({ target: { value: url } });
   };
+
+  const handleClearDatabase = async () => {
+    try {
+      const response = await fetch("http://127.0.0.1:5000/clear_database", {
+        method: "POST",
+      });
+  
+      const data = await response.json();
+      if (data.success) {
+        console.log("✅ Database cleared!");
+        setDatabaseImages([]); // ✅ Instantly update UI
+      } else {
+        console.error("❌ Error clearing database:", data.error);
+      }
+    } catch (error) {
+      console.error("❌ Network error:", error);
+    }
+  };
   
 
   return (
     <div className="flex">
       <div className="w-1/4 p-8 overflow-y-auto h-screen bg-gray-900 text-white">
         <div className="flex flex-col-reverse">
+          <button
+            onClick={handleClearDatabase}
+            className="bg-red-600 hover:bg-red-700 text-white text-sm px-3 py-1 rounded-lg"
+          >
+            Clear All
+          </button>
           {databaseImages.map((url, index) => (
             <img
               key={index}
