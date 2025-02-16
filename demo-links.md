@@ -14,7 +14,7 @@ https://cf-assets.www.cloudflare.com/slt3lc6tev37/3pwMuJ55jpErAafgrWbyTr/e6c487a
 
 Hardest
 palaubits
-https://www.baeldung.com/wp-content/uploads/sites/4/2022/06/CAPTCHA_test.png
+https://upload.wikimedia.org/wikipedia/commons/thumb/2/2e/CAPTCHA_test.png/460px-CAPTCHA_test.png
 
 ### Multiselect Captcha
 
