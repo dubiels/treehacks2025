@@ -8,9 +8,13 @@ Medium
 arch dsjbka
 https://cf-assets.www.cloudflare.com/slt3lc6tev37/4wCmCWsWiTB8ZG64tBVEKY/0499192ff9baf249fa2b45843c5d2948/recaptcha.png
 
-Harder
+<!-- Harder
 6T9JBCDS
-https://cf-assets.www.cloudflare.com/slt3lc6tev37/3pwMuJ55jpErAafgrWbyTr/e6c487ac6e4288dfe284db72b88ea3d1/captcha.png
+https://cf-assets.www.cloudflare.com/slt3lc6tev37/3pwMuJ55jpErAafgrWbyTr/e6c487ac6e4288dfe284db72b88ea3d1/captcha.png -->
+
+Hardest
+palaubits
+https://www.baeldung.com/wp-content/uploads/sites/4/2022/06/CAPTCHA_test.png
 
 ### Multiselect Captcha
 

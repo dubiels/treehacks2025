@@ -315,7 +315,7 @@ def test_agents():
         "gemini-1.5-flash",  # ✅ Google Gemini Flash
         "gemini-2.0-flash",
         "pixtral-12b-2409",  # ✅ Mistral
-        "gpt-4o",  # ✅ OpenAI GPT-4o
+        # "gpt-4o",  # ✅ OpenAI GPT-4o
         "llama-3.2-90b-vision-preview",  # ✅ Groq LLaMA 3 (8B)
         "llama-3.2-11b-vision-preview"  # ✅ Groq LLaMA 3 (70B)
     ]
