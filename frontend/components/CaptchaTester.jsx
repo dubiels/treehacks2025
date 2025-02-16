@@ -9,6 +9,8 @@ const CaptchaTester = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [obfuscatedImage, setObfuscatedImage] = useState(null);
     const [isObfuscating, setIsObfuscating] = useState(false);
+    const [isObfuscating2, setIsObfuscating2] = useState(false);
+    const [isObfuscating3, setIsObfuscating3] = useState(false);
     const [errorMessage, setErrorMessage] = useState("");
 
     // ✅ Dynamically determine models based on isMultiselect
@@ -132,6 +134,62 @@ const CaptchaTester = () => {
             setErrorMessage("Network error. Please try again.");
         } finally {
             setIsObfuscating(false);
+        }
+    };
+
+    const handleObfuscate2 = async () => {
+        if (!imageUrl || errorMessage) return;
+
+        setIsObfuscating2(true);
+
+        try {
+            const response = await fetch("http://127.0.0.1:5000/obfuscate2", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ image_url: imageUrl }),
+            });
+
+            const data = await response.json();
+            if (data.image_url) {
+                setObfuscatedImage(data.image_url);
+                setImageUrl(data.image_url);
+            } else {
+                console.error("Obfuscation 2 failed:", data.error);
+                setErrorMessage(`Server Error: ${data.error}`);
+            }
+        } catch (error) {
+            console.error("Error obfuscating (method 2):", error);
+            setErrorMessage("Network error. Please try again.");
+        } finally {
+            setIsObfuscating2(false);
+        }
+    };
+
+    const handleObfuscate3 = async () => {
+        if (!imageUrl || errorMessage) return;
+
+        setIsObfuscating3(true);
+
+        try {
+            const response = await fetch("http://127.0.0.1:5000/obfuscate3", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ image_url: imageUrl }),
+            });
+
+            const data = await response.json();
+            if (data.image_url) {
+                setObfuscatedImage(data.image_url);
+                setImageUrl(data.image_url);
+            } else {
+                console.error("Obfuscation 3 failed:", data.error);
+                setErrorMessage(`Server Error: ${data.error}`);
+            }
+        } catch (error) {
+            console.error("Error obfuscating (method 3):", error);
+            setErrorMessage("Network error. Please try again.");
+        } finally {
+            setIsObfuscating3(false);
         }
     };
 
@@ -265,15 +323,31 @@ const CaptchaTester = () => {
                             {isLoading ? "Testing..." : "Test CAPTCHA"}
                         </button>
 
-                        <button
-                            onClick={handleObfuscate}
-                            disabled={
-                                !imageUrl || isObfuscating || errorMessage
-                            }
-                            className="w-full bg-orange-600 hover:bg-orange-700 disabled:bg-gray-600 disabled:cursor-not-allowed py-3 rounded-lg font-semibold mt-4"
-                        >
-                            {isObfuscating ? "Obfuscating..." : "Obfuscate"}
-                        </button>
+                        <div className="flex gap-4">
+                            <button
+                                onClick={handleObfuscate}
+                                disabled={!imageUrl || isObfuscating || errorMessage}
+                                className="w-1/3 bg-orange-600 hover:bg-orange-700 disabled:bg-gray-600 disabled:cursor-not-allowed py-3 rounded-lg font-semibold mt-4"
+                            >
+                                {isObfuscating ? "Obfuscating..." : "Obfuscate (Noise)"}
+                            </button>
+
+                            <button
+                                onClick={handleObfuscate2}
+                                disabled={!imageUrl || isObfuscating2 || errorMessage}
+                                className="w-1/3 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 disabled:cursor-not-allowed py-3 rounded-lg font-semibold mt-4"
+                            >
+                                {isObfuscating2 ? "Obfuscating..." : "Obfuscate (Style + Warp)"}
+                            </button>
+
+                            <button
+                                onClick={handleObfuscate3}
+                                disabled={!imageUrl || isObfuscating3 || errorMessage}
+                                className="w-1/3 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed py-3 rounded-lg font-semibold mt-4"
+                            >
+                                {isObfuscating3 ? "Obfuscating..." : "Obfuscate (U-Net + Diffusion)"}
+                            </button>
+                        </div>
                     </div>
 
                     <div className="bg-gray-800 rounded-lg p-6">
