@@ -28,8 +28,9 @@ conn = sqlite3.connect(DB_PATH, check_same_thread=False)
 cursor = conn.cursor()
 
 
-@app.route("/", defaults={'path': ''})
-@app.route("/")
+# @app.route("/", defaults={'path': ''})
+# @app.route("/")
+@app.route('/<path:path>')
 def serve(path):
     if path != "" and os.path.exists(app.static_folder + '/' + path):
         return send_from_directory(app.static_folder, path)
