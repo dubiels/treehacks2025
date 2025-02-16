@@ -16,8 +16,8 @@ const CaptchaTester = () => {
         "Google gemini-1.5-flash",
         "Google gemini-1.5-pro",
         "Mistral pixtral-12b-2409",
-        "Mistral llama-3.2-90b-vision-preview",
-        "Mistral llama-3.2-11b-vision-preview",
+        "Groq llama-3.2-90b-vision-preview",
+        "Groq llama-3.2-11b-vision-preview",
     ];
 
     useEffect(() => {

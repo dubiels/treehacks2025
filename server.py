@@ -181,19 +181,23 @@ def solve():
 
         # Process Gemini models
         for gemini_model in gemini_models:
+            print("Gemini model", gemini_model)
             _, gemini_text, gemini_time = solve_captcha(base64_image, model_name=gemini_model, is_multiselect=is_multiselect)
             results.append({"agent": f"Google {gemini_model}", "response": gemini_text.strip().lower(), "time": f"{gemini_time}s", "correct": validation_function(correct_answer, gemini_text.strip().lower())})
 
         # Process Mistral models
         for mistral_model in mistral_models:
+            print("Mistral model", mistral_model)
             _, mistral_text, mistral_time = solve_captcha(base64_image, model_name=mistral_model, is_multiselect=is_multiselect)
             results.append({"agent": f"Mistral {mistral_model}", "response": mistral_text.strip().lower(), "time": f"{mistral_time}s", "correct": validation_function(correct_answer, mistral_text.strip().lower())})
 
         # Process Groq models
         for groq_model in groq_models:
+            print("Groq model", groq_model)
             _, groq_text, groq_time = solve_captcha(image_url, model_name=groq_model, is_multiselect=is_multiselect)
             results.append({"agent": f"Groq {groq_model}", "response": groq_text.strip().lower(), "time": f"{groq_time}s", "correct": validation_function(correct_answer, groq_text.strip().lower())})
 
+        print(results)
         response = {
             "display_image": image_url,
             "correct_response": correct_answer,
