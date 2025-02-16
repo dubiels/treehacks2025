@@ -1,4 +1,4 @@
-# CAPTCHA AI Resistance Tester
+# HackTCHA 🧑‍💻
 
 Test your CAPTCHAs against multiple industry-standard AI models to assess their resistance to automated solving.
 
