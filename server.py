@@ -18,8 +18,8 @@ app = Flask(__name__, static_folder="dist", static_url_path="/")
 CORS(app, resources={r"/*": {"origins": "*"}})
 
 # Imgur API credentials (replace with your actual client ID)
-IMGUR_CLIENT_ID = "your_client_id"
 DATABASE = "captcha.db"  # SQLite database file
+IMGUR_CLIENT_ID = os.getenv('IMGUR_CLIENT_ID')
 
 # ------------------ DATABASE SETUP ------------------
 def initialize_db():
