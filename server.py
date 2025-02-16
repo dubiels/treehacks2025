@@ -23,6 +23,23 @@ IMGUR_CLIENT_ID = os.getenv('IMGUR_CLIENT_ID')
 
 # ------------------ DATABASE SETUP ------------------
 
+@app.route("/get_images", methods=["GET"])
+def get_images():
+    """Retrieve all stored image URLs from the database, ordered by oldest first."""
+    try:
+        conn = sqlite3.connect(DATABASE)
+        cursor = conn.cursor()
+        
+        cursor.execute("SELECT url FROM images ORDER BY id ASC")  # Fetch URLs in order
+        rows = cursor.fetchall()
+        conn.close()
+        
+        image_urls = [row[0] for row in rows]  # Extract URLs from rows
+        
+        return jsonify({"images": image_urls}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 def print_db_contents():
     """Reads all stored image URLs from the database and prints them."""
     conn = sqlite3.connect(DATABASE)
