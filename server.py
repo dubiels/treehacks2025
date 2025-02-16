@@ -297,7 +297,7 @@ def solve():
         correct_answer = data["correct_answer"].strip().lower()
 
         # Solve CAPTCHA using OpenAI (GPT-4o with direct image URL)
-        _, openai_text, openai_time = solve_captcha(image_url, model_name="gpt-4o", is_multiselect=is_multiselect)
+        # _, openai_text, openai_time = solve_captcha(image_url, model_name="gpt-4o", is_multiselect=is_multiselect)
 
         # Fetch image from URL for Gemini & Mistral
         headers = {
