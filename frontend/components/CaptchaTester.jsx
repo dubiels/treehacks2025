@@ -131,55 +131,29 @@ const CaptchaTester = () => {
             model: model,
           }),
         });
-
+        // Log the raw response to debug
+        const data = await response.json();
+        console.log('Raw API response for model', model, data);
         return response.json();
-
       });
 
       const responses = await Promise.all(fetchPromises);
 
-      setResults((prev) =>
-        prev.map((result) => {
-          const matchingResult = responses.find(
-            (r) => r.agent === result.agent
-          );
-          return matchingResult
-            ? { ...matchingResult, status: "completed" }
-            : { ...result, status: "idle" }
-        })
-      );
-
+      // Map through the responses and set results
+      setResults(responses.map((response, index) => ({
+        agent: response.agent || models[index],
+        response: response.response || "No response",
+        time: response.time || "N/A",
+        correct: response.correct !== undefined ? response.correct : false,
+        status: "completed",
+      })));
     } catch (error) {
-      console.error()
-      setErrorMessage("Network error")
+      console.error("Error during submission:", error);
+      setErrorMessage("Network error. Please try again.");
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
-
-  // const data = await response.json();
-  //     if (data.error) {
-  //       console.error("Error:", data.error);
-  //       setErrorMessage(`Server Error: ${data.error}`);
-  //     } else {
-  //       setResults((prev) =>
-  //         prev.map((result) => {
-  //           const matchingResult = data.results.find(
-  //             (r) => r.agent === result.agent
-  //           );
-  //           return matchingResult
-  //             ? { ...matchingResult, status: "completed" }
-  //             : { ...result, status: "idle" };
-  //         })
-  //       );
-  //     }
-  //   } catch (error) {
-  //     console.error("Submission error:", error);
-  //     setErrorMessage("Network error. Please try again.");
-  //   } finally {
-  //     setIsLoading(false);
-  //   }
-  // };
+  };
 
   const handleObfuscate = async () => {
     if (!imageUrl || errorMessage) return;
@@ -385,7 +359,7 @@ const CaptchaTester = () => {
               <div
                 className={`relative flex items-center w-14 h-7 mx-3 bg-gray-600 rounded-full cursor-pointer transition-all ${isMultiselect
                   ? "bg-green-500"
-                  : "bg-gray-500"
+                  : "bg-blue-500"
                   }`}
                 onClick={() => {
                   setIsMultiselect(!isMultiselect);
@@ -543,16 +517,11 @@ const CaptchaTester = () => {
                 </div>
                 <div className="space-y-4">
                   {results.map((result, index) => (
-                    <div
-                      key={index}
-                      className="grid grid-cols-3 gap-4 items-center"
-                    >
+                    <div key={index} className="grid grid-cols-3 gap-4 items-center">
                       <div className="flex items-center gap-2">
                         <div className="w-6 h-6 flex items-center justify-center">
-                          {getStatusIcon(
-                            result.status,
-                            result.correct
-                          )}
+                          {/* Assuming getStatusIcon is a function that provides a status icon based on correctness */}
+                          {getStatusIcon(result.correct)}
                         </div>
                         {result.agent}
                       </div>
@@ -566,6 +535,7 @@ const CaptchaTester = () => {
                   ))}
                 </div>
               </div>
+
             </div>
           </div>
         </div>

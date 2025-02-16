@@ -25,22 +25,25 @@ IMGUR_CLIENT_ID = os.getenv('IMGUR_CLIENT_ID')
 
 # ------------------ DATABASE SETUP ------------------
 
+
 @app.route("/get_images", methods=["GET"])
 def get_images():
     """Retrieve all stored image URLs from the database, ordered by oldest first."""
     try:
         conn = sqlite3.connect(DATABASE)
         cursor = conn.cursor()
-        
-        cursor.execute("SELECT url FROM images ORDER BY id ASC")  # Fetch URLs in order
+
+        # Fetch URLs in order
+        cursor.execute("SELECT url FROM images ORDER BY id ASC")
         rows = cursor.fetchall()
         conn.close()
-        
+
         image_urls = [row[0] for row in rows]  # Extract URLs from rows
-        
+
         return jsonify({"images": image_urls}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
 def print_db_contents():
     """Reads all stored image URLs from the database and prints them."""
@@ -58,6 +61,7 @@ def print_db_contents():
             print(f"ID: {row[0]}, URL: {row[1]}")
     else:
         print("\n⚠️ No images found in the database.\n")
+
 
 def initialize_db():
     """Clears the database and recreates the images table on every server restart."""
@@ -79,7 +83,9 @@ def initialize_db():
     conn.close()
     print("✅ Database wiped and reinitialized on server restart.")
 
+
 initialize_db()  # Initialize DB when server starts
+
 
 def save_image_url_to_db(image_url):
     """Stores the uploaded Imgur URL in SQLite."""
@@ -89,6 +95,7 @@ def save_image_url_to_db(image_url):
     conn.commit()
     conn.close()
 
+
 @app.route("/", defaults={'path': ''})
 @app.route("/")
 def serve(path):
@@ -97,6 +104,8 @@ def serve(path):
     return send_from_directory(app.static_folder, 'index.html')
 
 # ------------------ IMAGE OBFUSCATION & UPLOAD ------------------
+
+
 def upload_to_imgur(image_path):
     """Uploads an image to Imgur and returns the correct direct URL."""
     headers = {"Authorization": f"Client-ID {IMGUR_CLIENT_ID}"}
@@ -128,6 +137,7 @@ def upload_to_imgur(image_path):
     else:
         raise Exception(f"Imgur upload failed: {data}")
 
+
 @app.route("/save_image_url", methods=["POST"])
 def save_image_url():
     """Saves a new image URL to the database."""
@@ -137,16 +147,17 @@ def save_image_url():
             return jsonify({"error": "Image URL is required"}), 400
 
         image_url = data["image_url"]
-        
+
         # ✅ Save to database
         save_image_url_to_db(image_url)
-        
+
         print(f"✅ Image URL saved: {image_url}")  # Debugging
-        
+
         return jsonify({"message": "Image URL saved successfully."}), 200
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
 @app.route("/obfuscate", methods=["POST"])
 def obfuscate():
@@ -201,6 +212,7 @@ def obfuscate():
         print(f"❌ Error in /obfuscate: {e}")  # Debugging
         return jsonify({"error": str(e)}), 500
 
+
 @app.route("/obfuscate2", methods=["POST"])
 def obfuscate2():
     """Apply style transfer and warping obfuscation, upload to Imgur, and return the public link."""
@@ -231,7 +243,7 @@ def obfuscate2():
         # Save temporarily
         filename = f"{uuid.uuid4().hex}.png"
         temp_dir = "public/temp"
-        
+
         if not os.path.exists(temp_dir):
             os.makedirs(temp_dir)
 
@@ -240,7 +252,7 @@ def obfuscate2():
 
         # Upload to Imgur
         imgur_url = upload_to_imgur(temp_path)
-        
+
         # Save the URL in SQLite
         save_image_url_to_db(imgur_url)
 
@@ -249,6 +261,7 @@ def obfuscate2():
     except Exception as e:
         print(f"❌ Error in /obfuscate2: {e}")
         return jsonify({"error": str(e)}), 500
+
 
 @app.route("/obfuscate3", methods=["POST"])
 def obfuscate3():
@@ -280,7 +293,7 @@ def obfuscate3():
         # Save temporarily
         filename = f"{uuid.uuid4().hex}.png"
         temp_dir = "public/temp"
-        
+
         if not os.path.exists(temp_dir):
             os.makedirs(temp_dir)
 
@@ -289,7 +302,7 @@ def obfuscate3():
 
         # Upload to Imgur
         imgur_url = upload_to_imgur(temp_path)
-        
+
         # Save the URL in SQLite
         save_image_url_to_db(imgur_url)
 
@@ -316,6 +329,7 @@ def obfuscate3():
         app.run(debug=True)
 
 # ------------------ CAPTCHA SOLVER ------------------
+
 
 @app.route("/solve", methods=["POST"])
 def solve():
@@ -355,7 +369,8 @@ def solve():
         # Solve CAPTCHA using Gemini & Mistral (Base64)
         gemini_models = ["gemini-1.5-flash", "gemini-2.0-flash"]
         mistral_models = ["pixtral-12b-2409"]
-        groq_models = ["llama-3.2-90b-vision-preview", "llama-3.2-11b-vision-preview"]
+        groq_models = ["llama-3.2-90b-vision-preview",
+                       "llama-3.2-11b-vision-preview"]
 
         results = [
             # TODO uncomment
@@ -364,20 +379,26 @@ def solve():
 
         # Process Gemini models
         for gemini_model in gemini_models:
-            _, gemini_text, gemini_time = solve_captcha(base64_image, model_name=gemini_model, is_multiselect=is_multiselect)
-            results.append({"agent": f"Google {gemini_model}", "response": gemini_text.strip().lower(), "time": f"{gemini_time}s", "correct": validation_function(correct_answer, gemini_text.strip().lower())})
+            _, gemini_text, gemini_time = solve_captcha(
+                base64_image, model_name=gemini_model, is_multiselect=is_multiselect)
+            results.append({"agent": f"Google {gemini_model}", "response": gemini_text.strip().lower(
+            ), "time": f"{gemini_time}s", "correct": validation_function(correct_answer, gemini_text.strip().lower())})
 
         # Process Mistral models
         for mistral_model in mistral_models:
-            _, mistral_text, mistral_time = solve_captcha(base64_image, model_name=mistral_model, is_multiselect=is_multiselect)
-            results.append({"agent": f"Mistral {mistral_model}", "response": mistral_text.strip().lower(), "time": f"{mistral_time}s", "correct": validation_function(correct_answer, mistral_text.strip().lower())})
+            _, mistral_text, mistral_time = solve_captcha(
+                base64_image, model_name=mistral_model, is_multiselect=is_multiselect)
+            results.append({"agent": f"Mistral {mistral_model}", "response": mistral_text.strip().lower(
+            ), "time": f"{mistral_time}s", "correct": validation_function(correct_answer, mistral_text.strip().lower())})
 
         # Process Groq models
         if is_multiselect:
             for groq_model in groq_models:
-                _, groq_text, groq_time = solve_captcha(image_url, model_name=groq_model, is_multiselect=is_multiselect)
-                results.append({"agent": f"Groq {groq_model}", "response": groq_text.strip().lower(), "time": f"{groq_time}s", "correct": validation_function(correct_answer, groq_text.strip().lower())})
-        
+                _, groq_text, groq_time = solve_captcha(
+                    image_url, model_name=groq_model, is_multiselect=is_multiselect)
+                results.append({"agent": f"Groq {groq_model}", "response": groq_text.strip().lower(
+                ), "time": f"{groq_time}s", "correct": validation_function(correct_answer, groq_text.strip().lower())})
+
         response = {
             "display_image": image_url,
             "correct_response": correct_answer,
@@ -389,6 +410,8 @@ def solve():
         return jsonify({"error": str(e)}), 500
 
 # ------------------ IMAGE OBFUSCATION FUNCTION ------------------
+
+
 def apply_obfuscation(img_np):
     """Apply AI-avoidant obfuscation techniques."""
     height, width, _ = img_np.shape
@@ -400,6 +423,7 @@ def apply_obfuscation(img_np):
     img_np = cv2.GaussianBlur(img_np, (3, 3), 0)
     return img_np
 
+
 def apply_obfuscation2(img_np):
     """
     Apply a simulated Diff-CAPTCHA obfuscation effect.
@@ -408,13 +432,13 @@ def apply_obfuscation2(img_np):
     """
     # Apply artistic stylization to the image
     styled_img = cv2.stylization(img_np, sigma_s=60, sigma_r=0.45)
-    
+
     # Get image dimensions
     height, width, _ = styled_img.shape
 
     # Create a mesh grid of pixel indices
     x, y = np.meshgrid(np.arange(width), np.arange(height))
-    
+
     # Create random displacement fields
     dx = (np.random.rand(height, width) - 0.5) * 10
     dy = (np.random.rand(height, width) - 0.5) * 10
@@ -422,13 +446,14 @@ def apply_obfuscation2(img_np):
     # Calculate the new mapping for each pixel
     map_x = (x + dx).astype(np.float32)
     map_y = (y + dy).astype(np.float32)
-    
+
     # Warp the styled image using the computed mappings
-    warped_img = cv2.remap(styled_img, map_x, map_y, 
-                          interpolation=cv2.INTER_LINEAR, 
-                          borderMode=cv2.BORDER_REFLECT)
-    
+    warped_img = cv2.remap(styled_img, map_x, map_y,
+                           interpolation=cv2.INTER_LINEAR,
+                           borderMode=cv2.BORDER_REFLECT)
+
     return warped_img
+
 
 def apply_obfuscation3(img_np):
     """
@@ -437,36 +462,37 @@ def apply_obfuscation3(img_np):
     """
     # Convert input to appropriate format
     img = cv2.cvtColor(img_np, cv2.COLOR_RGB2BGR)
-    
+
     # Step 1: U-Net Segmentation with improved text detection
     text_mask = segment_text(img)
     text_mask = cv2.resize(text_mask, (img.shape[1], img.shape[0]))
-    
+
     # Dilate the text mask slightly to protect text edges
-    kernel = np.ones((3,3), np.uint8)
+    kernel = np.ones((3, 3), np.uint8)
     text_mask = cv2.dilate(text_mask, kernel, iterations=1)
-    
+
     # Properly expand dimensions for broadcasting
     text_mask = np.repeat(text_mask[:, :, np.newaxis], 3, axis=2)
-    
+
     # Step 2: Apply gentler diffusion to background
     background_mask = 1 - text_mask
     background = img * background_mask
-    
+
     # Apply a more subtle diffusion effect
     diffused_background = apply_gentle_diffusion(background)
-    
+
     # Step 3: Apply subtle style transfer to background
     styled_background = apply_subtle_style(diffused_background)
-    
+
     # Step 4: Combine text and background with better blending
     text_region = img * text_mask
-    
+
     # Add a slight blur to the edges for better blending
-    blurred_mask = cv2.GaussianBlur(text_mask, (3,3), 0)
+    blurred_mask = cv2.GaussianBlur(text_mask, (3, 3), 0)
     final_image = text_region + styled_background * (1 - blurred_mask)
-    
+
     return cv2.cvtColor(final_image.astype(np.uint8), cv2.COLOR_BGR2RGB)
+
 
 def apply_gentle_diffusion(image):
     """
@@ -474,24 +500,26 @@ def apply_gentle_diffusion(image):
     """
     # Convert to float32 and normalize
     img_float = image.astype(np.float32) / 255.0
-    
+
     # Reduced parameters for gentler effect
     timesteps = 20  # Reduced from 50
     beta_start = 0.0001
     beta_end = 0.01  # Reduced from 0.02
-    
+
     # Create noise schedule
     betas = np.linspace(beta_start, beta_end, timesteps)
     alphas = 1.0 - betas
     alphas_cumprod = np.cumprod(alphas)
-    
+
     # Add noise more gently
     noisy = img_float.copy()
     for t in range(timesteps):
-        noise = np.random.normal(size=image.shape) * 0.5  # Reduced noise intensity
-        noise_strength = np.sqrt(1.0 - alphas_cumprod[t]) * 0.7  # Reduced strength
+        noise = np.random.normal(size=image.shape) * \
+            0.5  # Reduced noise intensity
+        noise_strength = np.sqrt(
+            1.0 - alphas_cumprod[t]) * 0.7  # Reduced strength
         noisy = np.sqrt(alphas_cumprod[t]) * img_float + noise_strength * noise
-    
+
     # Very light denoising to maintain structure
     denoised = cv2.fastNlMeansDenoisingColored(
         (noisy * 255).astype(np.uint8),
@@ -501,8 +529,9 @@ def apply_gentle_diffusion(image):
         7,    # Template window size
         21    # Search window size
     )
-    
+
     return denoised
+
 
 def apply_subtle_style(image):
     """
@@ -511,7 +540,7 @@ def apply_subtle_style(image):
     # Ensure image is in uint8 format
     if image.dtype != np.uint8:
         image = (image * 255).astype(np.uint8)
-    
+
     # 1. Gentle edge-preserving filter
     smoothed = cv2.edgePreservingFilter(
         image,
@@ -519,35 +548,38 @@ def apply_subtle_style(image):
         sigma_s=40,  # Reduced from 60
         sigma_r=0.3  # Reduced from 0.4
     )
-    
+
     # 2. Lighter stylization
     styled = cv2.stylization(
         smoothed,
         sigma_s=40,  # Reduced from 60
         sigma_r=0.3  # Reduced from 0.45
     )
-    
+
     # 3. Subtle detail enhancement
     enhanced = cv2.detailEnhance(
         styled,
         sigma_s=5,   # Reduced from 10
         sigma_r=0.1  # Reduced from 0.15
     )
-    
+
     # 4. Add very subtle noise for texture
-    noise = np.random.normal(0, 2, enhanced.shape).astype(np.uint8)  # Reduced from 5
+    noise = np.random.normal(0, 2, enhanced.shape).astype(
+        np.uint8)  # Reduced from 5
     textured = cv2.add(enhanced, noise)
-    
+
     # 5. Gentle contrast adjustment
     lab = cv2.cvtColor(textured, cv2.COLOR_BGR2LAB)
     l, a, b = cv2.split(lab)
-    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))  # Reduced from 3.0
+    clahe = cv2.createCLAHE(
+        clipLimit=2.0, tileGridSize=(8, 8))  # Reduced from 3.0
     l = clahe.apply(l)
-    lab = cv2.merge((l,a,b))
+    lab = cv2.merge((l, a, b))
     final = cv2.cvtColor(lab, cv2.COLOR_LAB2BGR)
-    
+
     # Blend with original image to maintain more clarity
     return cv2.addWeighted(image, 0.3, final, 0.7, 0)
+
 
 def segment_text(image):
     """
@@ -556,10 +588,10 @@ def segment_text(image):
     """
     # Get original dimensions
     original_h, original_w = image.shape[:2]
-    
+
     # Convert to grayscale for simpler processing
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    
+
     # Apply adaptive thresholding
     binary = cv2.adaptiveThreshold(
         gray,
@@ -569,15 +601,16 @@ def segment_text(image):
         11,  # Block size
         2    # Constant subtracted from mean
     )
-    
+
     # Clean up noise
-    kernel = np.ones((3,3), np.uint8)
+    kernel = np.ones((3, 3), np.uint8)
     binary = cv2.morphologyEx(binary, cv2.MORPH_OPEN, kernel)
-    
+
     # Normalize to [0, 1]
     mask = binary.astype(np.float32) / 255.0
-    
+
     return mask
+
 
 @app.route("/clear_database", methods=["POST"])
 def clear_database():
@@ -585,7 +618,7 @@ def clear_database():
     try:
         conn = sqlite3.connect(DATABASE)
         cursor = conn.cursor()
-        
+
         # Delete all rows
         cursor.execute("DELETE FROM images")
         conn.commit()
@@ -596,6 +629,6 @@ def clear_database():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+
 if __name__ == "__main__":
     app.run(debug=True)
-
