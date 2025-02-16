@@ -57,17 +57,16 @@ const CaptchaTester = () => {
   const isValidImageUrl = (url) => /\.(jpg|jpeg|png)$/i.test(url);
 
   const handleImageUrlChange = async (e) => {
-    const url = e.target.value;
+    const url = typeof e === 'string' ? e : e.target.value;
     setImageUrl(url);
-
-    // ✅ Validate URL format
+  
     const isValid = /\.(jpg|jpeg|png)$/i.test(url);
     setErrorMessage(
       !isValid && url.trim() !== ""
         ? "Invalid image URL. Only .jpg and .png are supported."
         : ""
     );
-
+  
     if (isValid) {
       try {
         await fetch("http://127.0.0.1:5000/save_image_url", {
@@ -76,12 +75,13 @@ const CaptchaTester = () => {
           body: JSON.stringify({ image_url: url }),
         });
         console.log("✅ Image URL saved:", url);
-        fetchDatabaseImages(); // Refresh the image list
+        fetchDatabaseImages();
       } catch (error) {
         console.error("❌ Error saving image URL:", error);
       }
     }
   };
+  
 
   const handleSubmit = async () => {
     if (!imageUrl || !correctAnswer || errorMessage) return;
@@ -234,6 +234,12 @@ const CaptchaTester = () => {
     }
   };
 
+  const handleImageClick = (url) => {
+    setImageUrl(url);
+    handleImageUrlChange({ target: { value: url } });
+  };
+  
+
   return (
     <div className="flex">
       <div className="w-1/4 p-4 overflow-y-auto h-screen">
@@ -244,11 +250,13 @@ const CaptchaTester = () => {
               key={index}
               src={url}
               alt={`Database image ${index}`}
-              className="w-full mb-2 rounded"
+              className="w-full mb-2 rounded cursor-pointer hover:opacity-80 transition-opacity"
+              onClick={() => handleImageClick(url)}
             />
           ))}
         </div>
       </div>
+
       <div className="w-3/4 p-4">
         <div className="min-h-screen bg-gray-900 text-white p-8">
           <div className="max-w-6xl mx-auto">
@@ -411,7 +419,6 @@ const CaptchaTester = () => {
             </div>
           </div>
         </div>
-        );
       </div>
     </div>
   );
