@@ -22,21 +22,43 @@ DATABASE = "captcha.db"  # SQLite database file
 IMGUR_CLIENT_ID = os.getenv('IMGUR_CLIENT_ID')
 
 # ------------------ DATABASE SETUP ------------------
-def initialize_db():
-    """Creates the database and table for storing Imgur URLs."""
+
+def print_db_contents():
+    """Reads all stored image URLs from the database and prints them."""
     conn = sqlite3.connect(DATABASE)
     cursor = conn.cursor()
-    
-    # Create table if it doesn't exist
+
+    cursor.execute("SELECT * FROM images")  # Fetch all rows
+    rows = cursor.fetchall()  # Retrieve data
+
+    conn.close()  # Close connection
+
+    if rows:
+        print("\n🔹 **Stored Image URLs in Database** 🔹\n")
+        for row in rows:
+            print(f"ID: {row[0]}, URL: {row[1]}")
+    else:
+        print("\n⚠️ No images found in the database.\n")
+
+def initialize_db():
+    """Clears the database and recreates the images table on every server restart."""
+    conn = sqlite3.connect(DATABASE)
+    cursor = conn.cursor()
+
+    # ✅ Drop the table if it exists (this wipes all stored data)
+    cursor.execute("DROP TABLE IF EXISTS images")
+
+    # ✅ Recreate the table
     cursor.execute("""
-        CREATE TABLE IF NOT EXISTS images (
+        CREATE TABLE images (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             url TEXT NOT NULL
         )
     """)
-    
+
     conn.commit()
     conn.close()
+    print("✅ Database wiped and reinitialized on server restart.")
 
 initialize_db()  # Initialize DB when server starts
 
@@ -87,6 +109,26 @@ def upload_to_imgur(image_path):
     else:
         raise Exception(f"Imgur upload failed: {data}")
 
+@app.route("/save_image_url", methods=["POST"])
+def save_image_url():
+    """Saves a new image URL to the database."""
+    try:
+        data = request.get_json()
+        if "image_url" not in data:
+            return jsonify({"error": "Image URL is required"}), 400
+
+        image_url = data["image_url"]
+        
+        # ✅ Save to database
+        save_image_url_to_db(image_url)
+        
+        print(f"✅ Image URL saved: {image_url}")  # Debugging
+        
+        return jsonify({"message": "Image URL saved successfully."}), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+        
 @app.route("/obfuscate", methods=["POST"])
 def obfuscate():
     """Apply obfuscation, upload to Imgur, and return the public link."""
@@ -132,6 +174,7 @@ def obfuscate():
 
         # ✅ Save the URL in SQLite
         save_image_url_to_db(imgur_url)
+        print_db_contents()
 
         return jsonify({"image_url": imgur_url})
 
@@ -194,10 +237,11 @@ def solve():
             results.append({"agent": f"Mistral {mistral_model}", "response": mistral_text.strip().lower(), "time": f"{mistral_time}s", "correct": validation_function(correct_answer, mistral_text.strip().lower())})
 
         # Process Groq models
-        for groq_model in groq_models:
-            _, groq_text, groq_time = solve_captcha(image_url, model_name=groq_model, is_multiselect=is_multiselect)
-            results.append({"agent": f"Groq {groq_model}", "response": groq_text.strip().lower(), "time": f"{groq_time}s", "correct": validation_function(correct_answer, groq_text.strip().lower())})
-
+        if is_multiselect:
+            for groq_model in groq_models:
+                _, groq_text, groq_time = solve_captcha(image_url, model_name=groq_model, is_multiselect=is_multiselect)
+                results.append({"agent": f"Groq {groq_model}", "response": groq_text.strip().lower(), "time": f"{groq_time}s", "correct": validation_function(correct_answer, groq_text.strip().lower())})
+        
         response = {
             "display_image": image_url,
             "correct_response": correct_answer,

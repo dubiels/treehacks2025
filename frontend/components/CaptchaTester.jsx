@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Clock, Check, X, AlertTriangle, Circle, Loader } from "lucide-react";
 
 const CaptchaTester = () => {
@@ -11,15 +11,20 @@ const CaptchaTester = () => {
     const [isObfuscating, setIsObfuscating] = useState(false);
     const [errorMessage, setErrorMessage] = useState("");
 
-    const models = [
-        "OpenAI GPT-4o",
-        "Google gemini-1.5-flash",
-        "Google gemini-1.5-pro",
-        "Mistral pixtral-12b-2409",
-        "Groq llama-3.2-90b-vision-preview",
-        "Groq llama-3.2-11b-vision-preview",
-    ];
-
+    // ✅ Dynamically determine models based on isMultiselect
+    const models = useMemo(() => {
+      const baseModels = [
+          "OpenAI GPT-4o",
+          "Google gemini-1.5-flash",
+          "Google gemini-1.5-pro",
+          "Mistral pixtral-12b-2409",
+      ];
+      const groqModels = [
+          "Groq llama-3.2-90b-vision-preview",
+          "Groq llama-3.2-11b-vision-preview",
+      ];
+      return isMultiselect ? [...baseModels, ...groqModels] : baseModels;
+    }, [isMultiselect]);
     useEffect(() => {
         setResults(
             models.map((model) => ({
@@ -30,19 +35,33 @@ const CaptchaTester = () => {
                 status: "idle",
             }))
         );
-    }, []);
+    }, [models]);
 
     const isValidImageUrl = (url) => /\.(jpg|jpeg|png)$/i.test(url);
 
-    const handleImageUrlChange = (e) => {
-        const url = e.target.value;
-        setImageUrl(url);
-        setErrorMessage(
-            !isValidImageUrl(url) && url.trim() !== ""
-                ? "Invalid image URL. Only .jpg and .png are supported."
-                : ""
-        );
-    };
+    const handleImageUrlChange = async (e) => {
+      const url = e.target.value;
+      setImageUrl(url);
+  
+      // ✅ Validate URL format
+      const isValid = /\.(jpg|jpeg|png)$/i.test(url);
+      setErrorMessage(!isValid && url.trim() !== "" ? "Invalid image URL. Only .jpg and .png are supported." : "");
+  
+      if (isValid) {
+          try {
+              // ✅ Send URL to backend to save in DB
+              await fetch("http://127.0.0.1:5000/save_image_url", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ image_url: url }),
+              });
+  
+              console.log("✅ Image URL saved:", url); // Debugging
+          } catch (error) {
+              console.error("❌ Error saving image URL:", error);
+          }
+      }
+  };  
 
     const handleSubmit = async () => {
         if (!imageUrl || !correctAnswer || errorMessage) return;
