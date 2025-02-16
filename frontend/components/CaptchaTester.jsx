@@ -54,39 +54,66 @@ const CaptchaTester = () => {
     );
 
     try {
-      const response = await fetch("http://127.0.0.1:5000/solve", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          image_url: imageUrl,
-          correct_answer: correctAnswer,
-        }),
+      const fetchPromises = models.map(async (model) => {
+        const response = await fetch("http://127.0.0.1:5000/solve", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            image_url: imageUrl,
+            correct_answer: correctAnswer,
+            is_multiselect: isMultiselect,
+            model: model,
+          }),
+        });
+
+        return response.json();
+
       });
 
-      const data = await response.json();
+      const responses = await Promise.all(fetchPromises);
 
-      if (data.error) {
-        console.error("Error:", data.error);
-        setErrorMessage(`Server Error: ${data.error}`);
-      } else {
-        setResults((prev) =>
-          prev.map((result) => {
-            const matchingResult = data.results.find(
-              (r) => r.agent === result.agent
-            );
-            return matchingResult
-              ? { ...matchingResult, status: "completed" }
-              : { ...result, status: "idle" };
-          })
-        );
-      }
+      setResults((prev) =>
+        prev.map((result) => {
+          const matchingResult = responses.find(
+            (r) => r.agent === result.agent
+          );
+          return matchingResult
+            ? { ...matchingResult, status: "completed" }
+            : { ...result, status: "idle" }
+        })
+      );
+
     } catch (error) {
-      console.error("Submission error:", error);
-      setErrorMessage("Network error. Please try again.");
+      console.error()
+      setErrorMessage("Network error")
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
-  };
+  }
+
+  // const data = await response.json();
+  //     if (data.error) {
+  //       console.error("Error:", data.error);
+  //       setErrorMessage(`Server Error: ${data.error}`);
+  //     } else {
+  //       setResults((prev) =>
+  //         prev.map((result) => {
+  //           const matchingResult = data.results.find(
+  //             (r) => r.agent === result.agent
+  //           );
+  //           return matchingResult
+  //             ? { ...matchingResult, status: "completed" }
+  //             : { ...result, status: "idle" };
+  //         })
+  //       );
+  //     }
+  //   } catch (error) {
+  //     console.error("Submission error:", error);
+  //     setErrorMessage("Network error. Please try again.");
+  //   } finally {
+  //     setIsLoading(false);
+  //   }
+  // };
 
   const handleObfuscate = async () => {
     if (!imageUrl || errorMessage) return;
