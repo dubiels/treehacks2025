@@ -327,7 +327,7 @@ const CaptchaTester = () => {
       </div>
 
       <div className="w-3/4">
-        <div className="min-h-screen bg-gray-900 text-white p-8">
+        <div className="min-h-screen bg-gray-900 text-white p-300">
           <div className="max-w-6xl mx-auto">
             <h1 className="text-4xl font-bold text-center mb-2 mt-12">
               Are your CAPTCHAs AI-resistant?
@@ -383,7 +383,7 @@ const CaptchaTester = () => {
               </span>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-60" >
               <div className="space-y-6">
                 <div className="bg-gray-800 rounded-lg p-6">
                   <h2 className="text-xl font-semibold mb-4">
@@ -542,6 +542,19 @@ const CaptchaTester = () => {
           </div>
         </div>
       </div>
+      <footer className="w-full p-4 fixed bottom-0 left-0 justify-center items-center text-center text-white bg-gradient-to-b from-gray-900 to-black">
+          <div>
+            <p className="text-sm text-gray-400 mb-2">
+              Created for Treehacks 2025 at Stanford University.
+            </p>
+            <a
+              href="https://devpost.com/software/hacktcha"
+              className="text-sm text-gray-400 hover:text-white underline"
+            >
+              Project Information →
+            </a>
+          </div>
+        </footer>
     </div>
   );
 };
