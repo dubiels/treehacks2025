@@ -16,7 +16,7 @@ const CaptchaTester = () => {
       const baseModels = [
           "OpenAI GPT-4o",
           "Google gemini-1.5-flash",
-          "Google gemini-1.5-pro",
+          "Google gemini-2.0-flash",
           "Mistral pixtral-12b-2409",
       ];
       const groqModels = [

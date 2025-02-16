@@ -29,7 +29,8 @@ if not GROQ_API_KEY:
 genai.configure(api_key=GOOGLE_API_KEY)
 gemini_models = {
     "gemini-1.5-flash": genai.GenerativeModel("gemini-1.5-flash"),
-    "gemini-1.5-pro": genai.GenerativeModel("gemini-1.5-pro")
+    "gemini-1.5-pro": genai.GenerativeModel("gemini-1.5-pro"),
+    "gemini-2.0-flash": genai.GenerativeModel("gemini-2.0-flash")
 }
 mistral_client = Mistral(api_key=MISTRAL_API_KEY)
 openai.api_key = OPENAI_API_KEY
@@ -312,7 +313,7 @@ def test_agents():
 
     models_to_test = [
         "gemini-1.5-flash",  # ✅ Google Gemini Flash
-        "gemini-1.5-pro",  # ✅ Google Gemini Pro
+        "gemini-2.0-flash",
         "pixtral-12b-2409",  # ✅ Mistral
         "gpt-4o",  # ✅ OpenAI GPT-4o
         "llama-3.2-90b-vision-preview",  # ✅ Groq LLaMA 3 (8B)

@@ -128,7 +128,7 @@ def save_image_url():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-        
+
 @app.route("/obfuscate", methods=["POST"])
 def obfuscate():
     """Apply obfuscation, upload to Imgur, and return the public link."""
@@ -218,7 +218,7 @@ def solve():
         base64_image = base64.b64encode(buffered.getvalue()).decode("utf-8")
 
         # Solve CAPTCHA using Gemini & Mistral (Base64)
-        gemini_models = ["gemini-1.5-flash", "gemini-1.5-pro"]
+        gemini_models = ["gemini-1.5-flash", "gemini-2.0-flash"]
         mistral_models = ["pixtral-12b-2409"]
         groq_models = ["llama-3.2-90b-vision-preview", "llama-3.2-11b-vision-preview"]
 
