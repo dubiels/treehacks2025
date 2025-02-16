@@ -61,14 +61,14 @@ const CaptchaTester = () => {
   const handleImageUrlChange = async (e) => {
     const url = typeof e === 'string' ? e : e.target.value;
     setImageUrl(url);
-  
+
     const isValid = /\.(jpg|jpeg|png)$/i.test(url);
     setErrorMessage(
       !isValid && url.trim() !== ""
         ? "Invalid image URL. Only .jpg and .png are supported."
         : ""
     );
-  
+
     if (isValid) {
       try {
         await fetch("http://127.0.0.1:5000/save_image_url", {
@@ -83,7 +83,7 @@ const CaptchaTester = () => {
       }
     }
   };
-  
+
 
   const handleSubmit = async () => {
     if (!imageUrl || !correctAnswer || errorMessage) return;
@@ -94,7 +94,6 @@ const CaptchaTester = () => {
     );
 
     try {
-<<<<<<< HEAD
       const fetchPromises = models.map(async (model) => {
         const response = await fetch("http://127.0.0.1:5000/solve", {
           method: "POST",
@@ -109,16 +108,6 @@ const CaptchaTester = () => {
 
         return response.json();
 
-=======
-      const response = await fetch("http://127.0.0.1:5000/solve", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          image_url: imageUrl,
-          correct_answer: correctAnswer,
-          is_multiselect: isMultiselect, // ✅ Pass the toggle state to the backend
-        }),
->>>>>>> main
       });
 
       const responses = await Promise.all(fetchPromises);
@@ -277,7 +266,7 @@ const CaptchaTester = () => {
     setImageUrl(url);
     handleImageUrlChange({ target: { value: url } });
   };
-  
+
 
   return (
     <div className="flex">
@@ -316,28 +305,24 @@ const CaptchaTester = () => {
             {/* ✅ Improved Toggle for CAPTCHA Type */}
             <div className="flex items-center justify-center mb-6">
               <span
-                className={`text-sm font-medium ${
-                  !isMultiselect ? "text-white" : "text-gray-400"
-                }`}
+                className={`text-sm font-medium ${!isMultiselect ? "text-white" : "text-gray-400"
+                  }`}
               >
                 Text CAPTCHA
               </span>
               <div
-                className={`relative flex items-center w-14 h-7 mx-3 bg-gray-600 rounded-full cursor-pointer transition-all ${
-                  isMultiselect ? "bg-green-500" : "bg-gray-500"
-                }`}
+                className={`relative flex items-center w-14 h-7 mx-3 bg-gray-600 rounded-full cursor-pointer transition-all ${isMultiselect ? "bg-green-500" : "bg-gray-500"
+                  }`}
                 onClick={() => setIsMultiselect(!isMultiselect)}
               >
                 <div
-                  className={`absolute w-6 h-6 bg-white rounded-full shadow-md transform transition-all ${
-                    isMultiselect ? "translate-x-7" : "translate-x-1"
-                  }`}
+                  className={`absolute w-6 h-6 bg-white rounded-full shadow-md transform transition-all ${isMultiselect ? "translate-x-7" : "translate-x-1"
+                    }`}
                 />
               </div>
               <span
-                className={`text-sm font-medium ${
-                  isMultiselect ? "text-white" : "text-gray-400"
-                }`}
+                className={`text-sm font-medium ${isMultiselect ? "text-white" : "text-gray-400"
+                  }`}
               >
                 Image Multi-Select CAPTCHA
               </span>
