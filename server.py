@@ -334,7 +334,7 @@ def solve():
 
         # Solve CAPTCHA using OpenAI (GPT-4o with direct image URL)
         # TODO uncomment
-        # _, openai_text, openai_time = solve_captcha(image_url, model_name="gpt-4o", is_multiselect=is_multiselect)
+        _, openai_text, openai_time = solve_captcha(image_url, model_name="gpt-4o", is_multiselect=is_multiselect)
 
         # Fetch image from URL for Gemini & Mistral
         headers = {
@@ -359,7 +359,7 @@ def solve():
 
         results = [
             # TODO uncomment
-            # {"agent": "OpenAI GPT-4o", "response": openai_text.strip().lower(), "time": f"{openai_time}s", "correct": validation_function(correct_answer, openai_text.strip().lower())}
+            {"agent": "OpenAI GPT-4o", "response": openai_text.strip().lower(), "time": f"{openai_time}s", "correct": validation_function(correct_answer, openai_text.strip().lower())}
         ]
 
         # Process Gemini models
